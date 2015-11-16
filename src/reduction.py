@@ -109,7 +109,7 @@ def reduce(bias, flat, dark, raw, combine_mode=CPUmath.mean_combine, save_master
     sci = []
 
     for r in raw:
-        s = (r - mb - md)/mf
+        s = (r - mb - (md - mb))/(mf - mb)
         sci.append(s)
 
     return sci
