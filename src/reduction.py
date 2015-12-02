@@ -70,8 +70,45 @@ def get_masterflat(flats, combine_mode, save):
 
     return master_flat
 
+def column(array, x, y):
+    """ Returns vertical column from stack of 2D arrays.
+    :param array: Stack (list) of 2D arrays
+    :param x: x coordinate of desired column
+    :param y: y coordinate of desired column
+    :return: list
+    """
+    l = len(array)
+    c = []
+    for i in range(l):
+        c.append(array[i][x][y])
+    return c
+
+#Interpolates darks to necessary exposure time
+def interpol(darks, time):
+    times = []
+    for f in darks:
+        d = pf.open(f)
+        t = d[0].header['EXPTIME']
+        d.close()
+        if d == time:
+            return f
+        else:
+            times.append(t)
+
+    # If it didn't find a dark with desired exposure time, it interpolates one column by column
+    d = pf.open(darks[0])
+    s = d.shape
+    md = np.zeros(s)
+    d.close()
+
+    for i in range(s[0]):
+        for j in range(s[1]):
+            md = sp.interp(time, times, column(darks, i, j))
+
+    return md
+
 @_check_combine_input
-def get_masterdark(darks, combine_mode, save):
+def get_masterdark(darks, combine_mode, save, time=None):
     """ Returns masterdark, combining all dark files using the given function.
         If not, uses CPU mean as default. Returns masterdark file and brings
         option to save it to .fits file.
@@ -80,7 +117,10 @@ def get_masterdark(darks, combine_mode, save):
     :param save: true if want to save the master dark file. Default is false.
     :return: np.ndarray (master dark)
     """
-    master_dark = combine_mode(darks)
+    if time is None:
+        master_dark = combine_mode(darks)
+    else:
+        master_dark = interpol(darks, time)
 
     if save:
         hdu = pf.PrimaryHDU(master_dark)

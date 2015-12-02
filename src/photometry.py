@@ -87,6 +87,24 @@ def phot_error(phot, sky_std, n_pix_ap, n_pix_sky, gain, ron=None):
     #             (1.0 + float(n_pix_ap) / n_pix_sky) * (N_e_sky + ron))
     # return phot / SNR
 
+#Defines subarray, size 2*rad+1, for centroid finding
+def subarray(arr, y, x, rad):
+    return arr[(y-rad):(y+rad+1), (x-rad):(x+rad+1)]
+
+
+#Find centroid of small array
+def centroid(arr):
+    med = sp.median(arr)
+    arr = arr-med
+    arr *= arr > 0
+
+    iy, ix = sp.mgrid[0:len(arr), 0:len(arr)]
+
+    cy = sp.sum(iy*arr)/sp.sum(arr)
+    cx = sp.sum(ix*arr)/sp.sum(arr)
+
+    return cy, cx
+
 
 def apphot(data, cs, sap, skydata, deg=1, gain=None, ron=None):
     """Do aperture photometry on data array
