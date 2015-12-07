@@ -2,7 +2,6 @@ __author__ = 'fran'
 
 from __future__ import division, print_function
 import scipy as sp
-import scipy.optimize as op
 import dataproc as dp
 import copy
 
