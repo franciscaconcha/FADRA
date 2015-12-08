@@ -44,17 +44,25 @@ def separate_paths(biaspath, darkpath, flatpath, rawpath):
     :param rawpath: path to raw science images folder
     :return: [[biasdata, biasheaders], [darkdata, darkheaders], [flatdata, flatheaders], [rawdata, rawheaders]]
     """
+    print("Opening BIAS files...")
     bias_files = get_file_list(biaspath)
     bias = open_files(bias_files)
+    print("Done.")
 
+    print("Opening Dark files...")
     dark_files = get_file_list(darkpath)
     darks = open_files(dark_files)
+    print("Done.")
 
+    print("Opening Flat files...")
     flat_files = get_file_list(flatpath)
     flats = open_files(flat_files)
+    print("Done.")
 
+    print("Opening Raw Science files...")
     raw_files = get_file_list(rawpath)
     raws = open_files(raw_files)
+    print("Done.")
 
     return [bias, darks, flats, raws]
 

@@ -28,7 +28,9 @@ def _check_combine_input(function):
                 continue
             else:
                 if i_shape != init_shape:
-                    raise IOError("Files to be combined in CPUmath.%s are not all of the same shape." % function.__name__)
+                    instance.remove(i)
+                    warnings.warn("File %s is of different shape. Will be ignored in %s." % (i, function.__name__) )
+                    #raise IOError("Files to be combined in CPUmath.%s are not all of the same shape." % function.__name__)
                 else:
                     raise IOError("Files to be combined in CPUmath.%s are not all of the same type." % function.__name__)
         return function(instance, *args, **kwargs)
@@ -50,6 +52,7 @@ def get_masterbias(bias, combine_mode, save):
         hdu = pf.PrimaryHDU(master_bias)
         hdu.writeto('MasterBias.fits')
 
+    print("Masterbias done")
     return master_bias
 
 @_check_combine_input
@@ -68,6 +71,7 @@ def get_masterflat(flats, combine_mode, save):
         hdu = pf.PrimaryHDU(master_flat)
         hdu.writeto('MasterFlat.fits')
 
+    print("MasterFlat done")
     return master_flat
 
 def column(array, x, y):
@@ -126,9 +130,10 @@ def get_masterdark(darks, combine_mode, save, time=None):
         hdu = pf.PrimaryHDU(master_dark)
         hdu.writeto('MasterDark.fits')
 
+    print("MasterDark done")
     return master_dark
 
-def reduce(bias, flat, dark, raw, combine_mode=CPUmath.mean_combine, save_masters=False):
+def reduce(bias, dark, flat, raw, combine_mode=CPUmath.mean_combine, save_masters=False):
     """ Reduces image files. Combines bias, flat, and dark files to obtain masters.
         Combination function given in combine_mode, default is CPU mean_combine.
         Returns array of reduced sci images. Can save masters if save_masters = True.
@@ -143,8 +148,8 @@ def reduce(bias, flat, dark, raw, combine_mode=CPUmath.mean_combine, save_master
     warnings.warn('Using combine function: %s' % (combine_mode))
 
     mb = get_masterbias(bias, combine_mode, save_masters)
-    mf = get_masterbias(flat, combine_mode, save_masters)
-    md = get_masterbias(dark, combine_mode, save_masters)
+    md = get_masterdark(dark, combine_mode, save_masters)
+    mf = get_masterflat(flat, combine_mode, save_masters)
 
     sci = []
 
