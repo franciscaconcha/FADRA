@@ -19,9 +19,9 @@ def centraldistances(data, c):
 
 
 def bipol(coef, x, y):
-    """Polynomial fit for sky sustraction
+    """Polynomial fit for sky subtraction
 
-    :param coef: sky fit polynomial coefficientes
+    :param coef: sky fit polynomial coefficients
     :type coef: sp.ndarray
     :param x: horizontal coordinates
     :type x: sp.ndarray
@@ -102,7 +102,7 @@ def centroid(arr):
     cy = sp.sum(iy*arr)/sp.sum(arr)
     cx = sp.sum(ix*arr)/sp.sum(arr)
 
-    return cy, cx
+    return [cy, cx]
 
 
 def apphot(data, cs, sap, skydata, deg=1, gain=None, ron=None):
@@ -184,4 +184,34 @@ def apphot(data, cs, sap, skydata, deg=1, gain=None, ron=None):
         n_pix_ap = res[d < sap].sum()
         error = phot_error(phot, sky_std, n_pix_ap, n_pix_sky, gain, ron=ron)
 
-    return phot, error, fwhmg, [fit, idx]
+    return [phot, error, fwhmg, [fit, idx]]
+
+
+def phot_series(data, coords, ap, skydata, rad, targ_names):
+    """ Executes aperture photometry over a series of reduced images.
+    :param data: np.array of reduced images as 2-D np arrays
+    :param coords: list of coordinates of desired targets. Format [[x0,y0], [x1,y1], ... [Xn, yn]]
+                    First coordinate in list is considered as "main" target!
+    :param skydata: inner and outer radius for sky annulus or sky fit (coefficients) and sky pixel mask
+    :type skydata: [float, float] or [sp.ndarray, idx_array]
+    :return:
+    """
+    n_targets = len(coords)
+    n_imgs = len(data)
+
+    phot = [[] for i in range(n_targets)]
+    errors = [[] for i in range(n_targets)]
+    subarrays = [[] for i in range(n_targets)]
+
+    for d in data:
+        # como pasar de coords a newcoords (coords del centroide?)
+        subarrays = [subarray(d, coords[i][1], coords[i][0]) for i in range(n_targets)]
+        newcoords = [centroid(s) for s in subarrays]
+        for i in range(n_targets): # Necesito el indice i
+            res = apphot(d, newcoords[i], ap, skydata)
+            phot[i].append(res[0])
+            errors[i].append(res[1])
+
+    return [phot, errors, targ_names]
+
+
