@@ -184,7 +184,7 @@ def apphot(data, cs, sap, skydata, deg=1, gain=None, ron=None):
         n_pix_ap = res[d < sap].sum()
         error = phot_error(phot, sky_std, n_pix_ap, n_pix_sky, gain, ron=ron)
 
-    return [phot, error, fwhmg, [fit, idx]]
+    return [phot, error, fwhmg, [fit, idx]]  # list, float, float, []
 
 
 def phot_series(data, coords, ap, skydata, targ_names):
