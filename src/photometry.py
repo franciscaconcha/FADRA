@@ -187,7 +187,7 @@ def apphot(data, cs, sap, skydata, deg=1, gain=None, ron=None):
     return [phot, error, fwhmg, [fit, idx]]
 
 
-def phot_series(data, coords, ap, skydata, rad, targ_names):
+def phot_series(data, coords, ap, skydata, targ_names):
     """ Executes aperture photometry over a series of reduced images.
     :param data: np.array of reduced images as 2-D np arrays
     :param coords: list of coordinates of desired targets. Format [[x0,y0], [x1,y1], ... [Xn, yn]]
@@ -202,10 +202,11 @@ def phot_series(data, coords, ap, skydata, rad, targ_names):
     phot = [[] for i in range(n_targets)]
     errors = [[] for i in range(n_targets)]
     subarrays = [[] for i in range(n_targets)]
+    newcoords = list(coords)
 
     for d in data:
         # como pasar de coords a newcoords (coords del centroide?)
-        subarrays = [subarray(d, coords[i][1], coords[i][0]) for i in range(n_targets)]
+        subarrays = [subarray(d, newcoords[i][1], newcoords[i][0]) for i in range(n_targets)]
         newcoords = [centroid(s) for s in subarrays]
         for i in range(n_targets): # Necesito el indice i
             res = apphot(d, newcoords[i], ap, skydata)
