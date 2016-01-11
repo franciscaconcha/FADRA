@@ -14,21 +14,21 @@ def gen(x, y, n):
 
 def main():
     try:
-        x = sys.argv[1] #path bias
-        y = sys.argv[2] #path dark
-        n = sys.argv[3] #path flat
-        z = sys.argv[4] #path raw
-        s = sys.argv[5] #path science
+        x = int(sys.argv[1]) #path bias
+        y = int(sys.argv[2]) #path dark
+        n = int(sys.argv[3]) #path flat
+        #z = sys.argv[4] #path raw
+        #s = sys.argv[5] #path science
     except:
         print('Unexpected error: ', sys.exc_info()[0])
         raise
 
-    """b = gen(x, y, n)
+    b = gen(x, y, n)
     d = gen(x, y, n + 1)
     f = gen(x, y, n + 2)
-    r = gen(x, y, n)"""
+    r = gen(x, y, n)
 
-    b, d, f, r = openFiles.separate_paths(x, y, n, z)
+    #b, d, f, r = openFiles.separate_paths(x, y, n, z)
 
     print(len(b), len(b[0]), len(b[1]))
     print(len(f), len(f[0]), len(f[1]))
