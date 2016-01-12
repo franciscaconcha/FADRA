@@ -1,0 +1,9 @@
+# Configuration file for testing script
+# Tweak to your own liking
+# Recommended values in comments
+# Use 1 tab separation
+#
+Image_size  1000    # Image shape will be a square of this side length in pixels
+N_of_stars  20  # Number of stars to be simulated: 1 target, others will be references
+Margin  50  # Margin in pxs for star coordinates so they are not too close to image borders
+Max_exp_time    20  # Max exposure time, in seconds. Used for dark field generation

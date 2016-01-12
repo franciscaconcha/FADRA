@@ -36,6 +36,11 @@ def createRads(n, limit):
 
 
 def main():
+    for line in open("config"):
+        li=line.strip()
+        if not li.startswith("#"):
+            l = line.split("\t")
+            print l
     n = int(sys.argv[1])  # number of stars
     size = int(sys.argv[2])  # side of square (image)
     margin = int(sys.argv[3])  # margin for star coordinates
