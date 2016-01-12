@@ -1,6 +1,7 @@
 import numpy as np
 import sys
 import matplotlib.pyplot as plt
+import configparser
 
 
 def makeGaussian(size, fwhm = 3, center=None):
@@ -36,14 +37,13 @@ def createRads(n, limit):
 
 
 def main():
-    for line in open("config"):
-        li=line.strip()
-        if not li.startswith("#"):
-            l = line.split("\t")
-            print l
-    n = int(sys.argv[1])  # number of stars
-    size = int(sys.argv[2])  # side of square (image)
-    margin = int(sys.argv[3])  # margin for star coordinates
+    config = configparser.ConfigParser()
+    config.read("config")
+    values = config['DEFAULT']
+    size = int(values['Image_size'].split()[0])
+    n = int(values['N_of_stars'].split()[0])
+    margin = int(values['Margin'].split()[0])
+    max_exp_t = int(values['Max_exp_time'].split()[0])
 
     coords = createCoords(n, size, margin)
     rads = createRads(n, 20)
