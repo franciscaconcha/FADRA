@@ -32,31 +32,80 @@ def createCoords(n, size, margin):
 
 
 def createRads(n, limit):
-    print(limit)
     return [limit] + list(np.random.randint(limit/2, size=((n-1),)))
 
 
 def main():
+    # Read configuration file
     config = configparser.ConfigParser()
     config.read("config")
-    values = config['DEFAULT']
-    size = int(values['Image_size'].split()[0])
-    n = int(values['N_of_stars'].split()[0])
-    margin = int(values['Margin'].split()[0])
-    max_exp_t = int(values['Max_exp_time'].split()[0])
 
-    coords = createCoords(n, size, margin)
-    rads = createRads(n, 20)
-    img = np.zeros((size, size))
+    field = config['FIELD']
+    size = int(field['Image_size'].split()[0])
+    margin = int(field['Margin'].split()[0])
 
-    i = 0
+    stars = config['STARS']
+    n = int(stars['N_of_stars'].split()[0])
+    fwhm = int(stars['FWHM'].split()[0])
 
-    for c in coords:
-        img += makeGaussian(size, rads[i], c)
-        i += 1
+    dark = config['DARK']
+    max_exp_t = int(dark['Max_exp_time'].split()[0])
+    max_noise = float(dark['Max_noise_level'].split()[0])
 
-    plt.matshow(img)
-    plt.show()
+    flat = config['FLAT']
+    sky = flat['Sky']
+
+    dinfo = config['DATA']
+    n_imgs = int(dinfo['N_of_images'].split()[0])
+    repeat_stars = dinfo['Repeat_stars'].split()[0]
+    save_clean = bool(dinfo['Save_clean'].split()[0])
+    save_noisy = bool(dinfo['Save_noisy'].split()[0])
+    save_masters = bool(dinfo['Save_masters'].split()[0])
+    save_reduced = bool(dinfo['Save_reduced'].split()[0])
+
+    # Generate darks going from 1 s to max_exp_time
+    darks = []
+    for i in range(1, max_exp_t + 1):
+        darks.append(np.random.rand(size, size) * max_noise * fwhm * i)
+
+    # Generate flat
+
+    # Generate coordinates and stars
+    images = []
+
+    if repeat_stars == "True":
+        coords = createCoords(n, size, margin)
+        rads = createRads(n, 20)
+        img = np.zeros((size, size))
+
+        j = 0
+
+        for c in coords:
+            img += makeGaussian(size, rads[j], c)
+            j += 1
+
+        plt.matshow(img)
+        plt.show()
+
+        images = [img for k in range(n_imgs)]
+
+    else:
+        for i in range(n_imgs):
+            coords = createCoords(n, size, margin)
+            rads = createRads(n, 20)
+            img = np.zeros((size, size))
+
+            j = 0
+
+            for c in coords:
+                img += makeGaussian(size, rads[j], c)
+                j += 1
+
+            images.append(img)
+
+    for p in images:
+        plt.matshow(p)
+        plt.show()
 
 if __name__ == "__main__":
     main()
