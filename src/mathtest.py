@@ -10,7 +10,7 @@ c = np.array([[9, 10, 11], [12, 1, 2]])
 #print(CPUmath.median_combine([a, b, c]))
 #print(CPUmath.mean_combine([a, b, c]))
 
-#hdu_list = pf.open('test.fits')
+#hdu_list = pf.open('reductionTest.fits')
 #print(type(hdu_list), type(a))
 
 #header = hdu_list[0].header
@@ -22,4 +22,4 @@ c = np.array([[9, 10, 11], [12, 1, 2]])
 from reduction import Reduction
 
 r = Reduction()
-r._load_data('/media/Fran/dataproc/test')
+r._load_data('/media/Fran/dataproc/reductionTest')

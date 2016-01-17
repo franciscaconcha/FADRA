@@ -4,6 +4,7 @@ import CPUmath
 import pyfits as pf
 import warnings
 from functools import wraps as _wraps
+import numpy as np
 
 def _check_combine_input(function):
     """ Decorator that checks all images in the input are
@@ -133,7 +134,7 @@ def get_masterdark(darks, combine_mode, save, time=None):
     print("MasterDark done")
     return master_dark
 
-def reduce(bias, dark, flat, raw, combine_mode=CPUmath.mean_combine, save_masters=False):
+def CPUreduce(bias, dark, flat, raw, combine_mode=CPUmath.mean_combine, save_masters=False):
     """ Reduces image files. Combines bias, flat, and dark files to obtain masters.
         Combination function given in combine_mode, default is CPU mean_combine.
         Returns array of reduced sci images. Can save masters if save_masters = True.
@@ -158,3 +159,59 @@ def reduce(bias, dark, flat, raw, combine_mode=CPUmath.mean_combine, save_master
         sci.append(s)
 
     return sci
+
+
+def GPUreduce(bias, dark, flat, raw, combine_mode=CPUmath.mean_combine, save_masters=False):
+    import pyopencl as cl
+    import os
+    os.environ['PYOPENCL_COMPILER_OUTPUT'] = '1'
+
+    platforms = cl.get_platforms()
+    if len(platforms) == 0:
+        print("Failed to find any OpenCL platforms.")
+
+    devices = platforms[0].get_devices(cl.device_type.GPU)
+    if len(devices) == 0:
+        print("Could not find GPU device, trying CPU...")
+        devices = platforms[0].get_devices(cl.device_type.CPU)
+        if len(devices) == 0:
+            print("Could not find OpenCL GPU or CPU device.")
+
+    ctx = cl.Context([devices[0]])
+    queue = cl.CommandQueue(ctx)
+    mf = cl.mem_flags
+
+    warnings.warn('Using combine function: %s' % (combine_mode))
+
+    mb = get_masterbias(bias, combine_mode, save_masters)
+    md = get_masterdark(dark, combine_mode, save_masters)
+    mf = get_masterflat(flat, combine_mode, save_masters)
+
+    img = np.array([])
+
+    for fi in raw:
+        fi = fi - mb
+        sh = fi.shape
+        ss = sh[0] * sh[1]
+        data = fi.reshape(1, ss)
+        ndata = data[0]
+        img = np.append(img, ndata)
+
+    #GPU reduction
+    img_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=img)
+    dark_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=md-mb)
+    flat_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=mf-mb)
+    res_buf = cl.Buffer(ctx, mf.WRITE_ONLY, img.nbytes)
+
+    f = open('reduce.cl', 'r')
+    programName = "".join(f.readlines())
+
+    program = cl.Program(ctx, programName).build()
+
+    start = time.clock()
+    program.reduce(queue, img.shape, None, dark_buf, flat_buf, img_buf, res_buf) #sizeX, sizeY, sizeZ
+    end = time.clock()
+    print("GPU: %f s" % (end - start))
+
+    res = np.empty_like(img)
+    cl.enqueue_copy(queue, res, res_buf)

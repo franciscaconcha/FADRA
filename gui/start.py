@@ -1,8 +1,10 @@
 __author__ = 'fran'
 
 import sys
-from PyQt4 import QtCore, QtGui
 from test import Ui_MainWindow
+
+from PyQt4 import QtCore, QtGui
+
 
 class StartQT4(QtGui.QMainWindow):
     def file_dialog(self):
