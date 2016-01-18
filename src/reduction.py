@@ -113,7 +113,7 @@ def interpol(darks, time):
     return md
 
 @_check_combine_input
-def get_masterdark(darks, combine_mode, save, time=None):
+def get_masterdark(darks, combine_mode, time, save):
     """ Returns masterdark, combining all dark files using the given function.
         If not, uses CPU mean as default. Returns masterdark file and brings
         option to save it to .fits file.
@@ -125,7 +125,14 @@ def get_masterdark(darks, combine_mode, save, time=None):
     if time is None:
         master_dark = combine_mode(darks)
     else:
-        master_dark = interpol(darks, time)
+        master_dark = None
+        for d in darks:
+            exp_time = pf.getheader(d)['EXPTIME']
+            if exp_time == time:
+                master_dark = d
+
+        if master_dark is None:
+            master_dark = interpol(darks, time)
 
     if save:
         hdu = pf.PrimaryHDU(master_dark)
@@ -134,7 +141,7 @@ def get_masterdark(darks, combine_mode, save, time=None):
     print("MasterDark done")
     return master_dark
 
-def CPUreduce(bias, dark, flat, raw, combine_mode=CPUmath.mean_combine, save_masters=False):
+def CPUreduce(bias, dark, flat, raw, exp_time=None, combine_mode=CPUmath.mean_combine, save_masters=False):
     """ Reduces image files. Combines bias, flat, and dark files to obtain masters.
         Combination function given in combine_mode, default is CPU mean_combine.
         Returns array of reduced sci images. Can save masters if save_masters = True.
@@ -142,6 +149,10 @@ def CPUreduce(bias, dark, flat, raw, combine_mode=CPUmath.mean_combine, save_mas
     :param flat: np.ndarray of all flat files to be combined
     :param dark: np.ndarray of all dark files to be combined
     :param raw: np.ndarray of all raw files to be reduced
+    :param exp_time: desired exposure time. If a value is given, dark will be searched for the corresponding dark for
+                    said exposure time, and that dark will be used as masterdark. If no dark is found for that exposure
+                    time, one will be interpolated. If no exp_time is given (not recommended!), all dark files in 'dark'
+                    will simply be combined using combine_mode.
     :param combine_mode: function used to combine bias, darks, and flats
     :param save_masters: option to save master files. Default is false. Saves in current folder.
     :return: np.ndarray of reduced science images
@@ -149,7 +160,7 @@ def CPUreduce(bias, dark, flat, raw, combine_mode=CPUmath.mean_combine, save_mas
     warnings.warn('Using combine function: %s' % (combine_mode))
 
     mb = get_masterbias(bias, combine_mode, save_masters)
-    md = get_masterdark(dark, combine_mode, save_masters)
+    md = get_masterdark(dark, combine_mode, exp_time, save_masters)
     mf = get_masterflat(flat, combine_mode, save_masters)
 
     sci = []
@@ -207,11 +218,7 @@ def GPUreduce(bias, dark, flat, raw, combine_mode=CPUmath.mean_combine, save_mas
     programName = "".join(f.readlines())
 
     program = cl.Program(ctx, programName).build()
-
-    start = time.clock()
     program.reduce(queue, img.shape, None, dark_buf, flat_buf, img_buf, res_buf) #sizeX, sizeY, sizeZ
-    end = time.clock()
-    print("GPU: %f s" % (end - start))
 
     res = np.empty_like(img)
     cl.enqueue_copy(queue, res, res_buf)
