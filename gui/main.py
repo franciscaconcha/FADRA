@@ -1,60 +1,43 @@
-# -*- coding: utf-8 -*-
+import Tkinter
 
-# Form implementation generated from reading ui file 'main.ui'
-#
-# Created: Sun Nov 15 00:45:53 2015
-#      by: PyQt4 UI code generator 4.10.4
-#
-# WARNING! All changes made in this file will be lost!
 
-from PyQt4 import QtCore, QtGui
+class simpleapp_tk(Tkinter.Tk):
 
-try:
-    _fromUtf8 = QtCore.QString.fromUtf8
-except AttributeError:
-    def _fromUtf8(s):
-        return s
+    def __init__(self, parent):
+        Tkinter.Tk.__init__(self, parent)
+        self.parent = parent
+        self.initialize()
 
-try:
-    _encoding = QtGui.QApplication.UnicodeUTF8
-    def _translate(context, text, disambig):
-        return QtGui.QApplication.translate(context, text, disambig, _encoding)
-except AttributeError:
-    def _translate(context, text, disambig):
-        return QtGui.QApplication.translate(context, text, disambig)
+    def initialize(self):
+        self.grid()
 
-class Ui_MainWindow(object):
-    def setupUi(self, MainWindow):
-        MainWindow.setObjectName(_fromUtf8("MainWindow"))
-        MainWindow.resize(567, 145)
-        self.centralwidget = QtGui.QWidget(MainWindow)
-        self.centralwidget.setObjectName(_fromUtf8("centralwidget"))
-        self.pushButton = QtGui.QPushButton(self.centralwidget)
-        self.pushButton.setGeometry(QtCore.QRect(80, 30, 85, 27))
-        self.pushButton.setObjectName(_fromUtf8("pushButton"))
-        MainWindow.setCentralWidget(self.centralwidget)
-        self.menubar = QtGui.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 567, 27))
-        self.menubar.setObjectName(_fromUtf8("menubar"))
-        MainWindow.setMenuBar(self.menubar)
-        self.statusbar = QtGui.QStatusBar(MainWindow)
-        self.statusbar.setObjectName(_fromUtf8("statusbar"))
-        MainWindow.setStatusBar(self.statusbar)
+        self.entryVariable = Tkinter.StringVar()
+        self.entry = Tkinter.Entry(self, textvariable=self.entryVariable)
+        self.entry.grid(column=0, row=0, sticky='EW')
+        self.entry.bind("<Return>", self.OnPressEnter)
+        self.entryVariable.set(u"Enter text here.")
 
-        self.retranslateUi(MainWindow)
-        QtCore.QMetaObject.connectSlotsByName(MainWindow)
+        button = Tkinter.Button(self, text=u"Click me !", command=self.OnButtonClick)
+        button.grid(column=1, row=0)
 
-    def retranslateUi(self, MainWindow):
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow", None))
-        self.pushButton.setText(_translate("MainWindow", "Load Data", None))
+        self.labelVariable = Tkinter.StringVar()
+        label = Tkinter.Label(self, textvariable=self.labelVariable, anchor="w", fg="white", bg="blue")
+        label.grid(column=0, row=1, columnspan=2, sticky='EW')
+        self.labelVariable.set(u"Hello !")
+
+        self.grid_columnconfigure(0, weight=1)
+        self.resizable(True, False)  # horizontal, vertical
+        self.update()
+        self.geometry(self.geometry())
+
+    def OnButtonClick(self):
+        self.labelVariable.set( self.entryVariable.get()+" (You clicked the button)" )
+
+    def OnPressEnter(self,event):
+        self.labelVariable.set( self.entryVariable.get()+" (You pressed ENTER)" )
 
 
 if __name__ == "__main__":
-    import sys
-    app = QtGui.QApplication(sys.argv)
-    MainWindow = QtGui.QMainWindow()
-    ui = Ui_MainWindow()
-    ui.setupUi(MainWindow)
-    MainWindow.show()
-    sys.exit(app.exec_())
-
+    app = simpleapp_tk(None)
+    app.title('my application')
+    app.mainloop()
