@@ -1,9 +1,12 @@
 __author__ = 'fran'
 
-from src import reduction, CPUmath
-import numpy as np
 import sys
-import openFiles
+
+import numpy as np
+
+from src import reduction, CPUmath
+from src.defaultfuncs import CPUmath
+
 
 def gen(x, y, n):
     r = []
