@@ -54,6 +54,17 @@ from reductionTest import reductionTest
 
 darks, flat, images, images_noisy = reductionTest.generate_images("../../reductionTest/config")
 
+raw_names = []
+t = 0
+for i in images_noisy:
+    #hdu = pf.PrimaryHDU(i)
+    filename = "./reduce_test/reduced_" + "%03i.fits" % t
+    #hdu.writeto(filename)
+    raw_names.append(filename)
+    pf.open(filename)[0]
+    t += 1
+print("saved")
+
 import matplotlib.pyplot as plt
 
 img = np.array([])
@@ -107,10 +118,16 @@ print(len(res2))
 #    j.append((i - darks[0])/flat[0].reshape(size, size))
 
 from reduction import CPUreduce
-j = CPUreduce(darks[0], darks[0], flat[0], images_noisy)
+import dataproc as dp
+j_dir = CPUreduce(dp.AstroDir("./reduce_test/"), "./sci_reduced/", darks[0], darks[0], flat[0])
 
-for t in j:
-    t = np.round(t, 6)
+#for t in j:
+#    t = np.round(t, 6)
+
+j = []
+for t in j_dir:
+    data = t.reader()
+    j.append(data)
 
 fig = plt.figure()
 ax1 = plt.subplot(331)

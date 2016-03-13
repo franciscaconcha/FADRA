@@ -14,7 +14,7 @@ class simpleapp_tk(tk.Tk):
         self.grid()
 
         def hello():
-            print "hello!"
+            print("hello!")
 
         def load_data_window():
             t = tk.Toplevel()
