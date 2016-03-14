@@ -43,41 +43,29 @@ def _check_combine_input(function):
     return input_checker
 
 
-@_check_combine_input
-def get_masterbias(bias, combine_mode, save):
+#@_check_combine_input
+def get_masterbias(bias, combine_mode, save_path):
     """ Returns masterbias, combining all bias files using the given function.
-        If not, uses CPU mean as default. Returns masterbias file and brings
-        option to save it to .fits file.
-    :param bias: np.ndarray with all bias arrays
+        If function not given, uses CPU mean as default. Returns AstroFile.
+    :param bias: AstroDir with all bias files
     :param combine_mode: function used to combine bias
-    :param save: true if want to save the master bias file. Default is false.
-    :return: np.ndarray (master bias)
+    :return: AstroFile
     """
     master_bias = combine_mode(bias)
-
-    if save:
-        hdu = pf.PrimaryHDU(master_bias)
-        hdu.writeto('MasterBias.fits')
 
     print("Masterbias done")
     return master_bias
 
 
-@_check_combine_input
+#@_check_combine_input
 def get_masterflat(flats, combine_mode, save):
-    """ Returns masterflat, combining all flat files using the given function.
-        If not, uses CPU mean as default. Returns masterflat file and brings
-        option to save it to .fits file.
-    :param flats: np.ndarray with all flat arrays
-    :param combine_mode: function used to combine flats
-    :param save: true if want to save the master flat file. Default is false.
-    :return: np.ndarray (master flat)
+    """ Returns masterflat, combining all bias files using the given function.
+        If function not given, uses CPU mean as default. Returns AstroFile.
+    :param bias: AstroDir with all flat files
+    :param combine_mode: function used to combine bias
+    :return: AstroFile
     """
     master_flat = combine_mode(flats)
-
-    if save:
-        hdu = pf.PrimaryHDU(master_flat)
-        hdu.writeto('MasterFlat.fits')
 
     print("MasterFlat done")
     return master_flat
@@ -175,34 +163,46 @@ def CPUreduce(raw, sci_path, bias=None, dark=None, flat=None,
     :param save_reduced: option to save reduced files. Default is false. Saves in sci AstroDir path.
     :return: AstroDir of reduced science images and corresponding master files attached.
     """
+    #import dataproc as dp
 
     if bias is not None:
-        #bias_data = bias.readdata()
-        warnings.warn('Combining bias with function: %s' % (combine_mode))
-        mb = get_masterbias(bias, combine_mode, save_masters)
+        # This is done here for now, otherwise decorator on get_masterX has to be fixed
+        if isinstance(bias, io_dir.AstroDir):
+            print("Is AstroDir")
+            bias_data = bias.readdata()
+            mb = get_masterbias(bias_data, combine_mode, save_masters)
+        else:
+            warnings.warn('Combining bias with function: %s' % (combine_mode))
+            mb = get_masterbias(bias, combine_mode, save_masters)
     else:
         mb = raw.bias
     if dark is not None:
-        #dark_data = dark.readdata()
-        warnings.warn('Combining darks with function: %s' % (combine_mode))
-        md = get_masterdark(dark, combine_mode, exp_time, save_masters)
+        if isinstance(dark, io_dir.AstroDir):
+            dark_data = dark.readdata()
+            md = get_masterdark(dark_data, combine_mode, exp_time, save_masters)
+        else:
+            warnings.warn('Combining darks with function: %s' % (combine_mode))
+            md = get_masterdark(dark, combine_mode, exp_time, save_masters)
     else:
         md = raw.dark
     if flat is not None:
-        #flat_data = flat.readdata()
-        warnings.warn('Combining flats with function: %s' % (combine_mode))
-        mf = get_masterflat(flat, combine_mode, save_masters)
+        if isinstance(flat, io_dir.AstroDir):
+            flat_data = flat.readdata()
+            mf = get_masterflat(flat_data, combine_mode, save_masters)
+        else:
+            warnings.warn('Combining flats with function: %s' % (combine_mode))
+            mf = get_masterflat(flat, combine_mode, save_masters)
     else:
         mf = raw.flat
 
     raw_data = raw.readdata()
-    sci = []
 
     import pyfits as pf
     i = 0
 
     for r in raw_data:
         s = (r - mb - (md - mb)) / (mf - mb)
+        # TODO check what happens with the header
         #s_header = r.readheader()  # Reduced data header is same as raw header for now
         hdu = pf.PrimaryHDU(s)
         filename = sci_path + "/reduced_" + "%03i.fits" % i

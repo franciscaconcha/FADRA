@@ -57,13 +57,17 @@ darks, flat, images, images_noisy = reductionTest.generate_images("../../reducti
 raw_names = []
 t = 0
 for i in images_noisy:
-    #hdu = pf.PrimaryHDU(i)
+    hdu = pf.PrimaryHDU(i)
     filename = "./reduce_test/reduced_" + "%03i.fits" % t
-    #hdu.writeto(filename)
+    hdu.writeto(filename)
     raw_names.append(filename)
     pf.open(filename)[0]
     t += 1
 print("saved")
+
+hdu = pf.PrimaryHDU(darks[0])
+filename = "./calib/bias.fits"
+hdu.writeto(filename)
 
 import matplotlib.pyplot as plt
 
@@ -128,6 +132,7 @@ j = []
 for t in j_dir:
     data = t.reader()
     j.append(data)
+#print(j)
 
 fig = plt.figure()
 ax1 = plt.subplot(331)
