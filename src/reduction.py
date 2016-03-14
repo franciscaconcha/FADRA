@@ -42,8 +42,8 @@ def _check_combine_input(function):
 
     return input_checker
 
-
-#@_check_combine_input
+#TODO no es necesario _check_combine_input aqui, se hace en _combine functions...
+@_check_combine_input
 def get_masterbias(bias, combine_mode, save_path):
     """ Returns masterbias, combining all bias files using the given function.
         If function not given, uses CPU mean as default. Returns AstroFile.
@@ -57,7 +57,7 @@ def get_masterbias(bias, combine_mode, save_path):
     return master_bias
 
 
-#@_check_combine_input
+@_check_combine_input
 def get_masterflat(flats, combine_mode, save):
     """ Returns masterflat, combining all bias files using the given function.
         If function not given, uses CPU mean as default. Returns AstroFile.
@@ -164,6 +164,7 @@ def CPUreduce(raw, sci_path, bias=None, dark=None, flat=None,
     :return: AstroDir of reduced science images and corresponding master files attached.
     """
     #import dataproc as dp
+    #print(bias.shape, dark.shape, flat.shape)
 
     if bias is not None:
         # This is done here for now, otherwise decorator on get_masterX has to be fixed
@@ -212,10 +213,12 @@ def CPUreduce(raw, sci_path, bias=None, dark=None, flat=None,
     return io_dir.AstroDir(sci_path, mb, mf, md)
 
 
-def GPUreduce(bias, dark, flat, raw, combine_mode=CPUmath.mean_combine, save_masters=False):
+def GPUreduce(bias, dark, flat, raw, exp_time=None, combine_mode=CPUmath.mean_combine, save_masters=False):
     import pyopencl as cl
     import os
     os.environ['PYOPENCL_COMPILER_OUTPUT'] = '1'
+
+    #print(bi, dark.shape, flat.shape)
 
     platforms = cl.get_platforms()
     if len(platforms) == 0:
@@ -235,11 +238,12 @@ def GPUreduce(bias, dark, flat, raw, combine_mode=CPUmath.mean_combine, save_mas
     warnings.warn('Using combine function: %s' % (combine_mode))
 
     mb = get_masterbias(bias, combine_mode, save_masters)
-    md = get_masterdark(dark, combine_mode, save_masters)
-    mf = get_masterflat(flat, combine_mode, save_masters)
+    md = get_masterdark(dark, combine_mode, exp_time, save_masters)
+    m_f = get_masterflat(flat, combine_mode, save_masters)
+    print(mb.shape, md.shape, m_f.shape)
 
     img = np.array([])
-
+    ss = 0
     for fi in raw:
         fi = fi - mb
         sh = fi.shape
@@ -248,10 +252,14 @@ def GPUreduce(bias, dark, flat, raw, combine_mode=CPUmath.mean_combine, save_mas
         ndata = data[0]
         img = np.append(img, ndata)
 
+    mb = mb.reshape(1, ss)
+    md = md.reshape(1, ss)
+    m_f = m_f.reshape(1, ss)
+
     # GPU reduction
     img_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=img)
     dark_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=md - mb)
-    flat_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=mf - mb)
+    flat_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=m_f - mb)
     res_buf = cl.Buffer(ctx, mf.WRITE_ONLY, img.nbytes)
 
     f = open('reduce.cl', 'r')
@@ -262,3 +270,7 @@ def GPUreduce(bias, dark, flat, raw, combine_mode=CPUmath.mean_combine, save_mas
 
     res = np.empty_like(img)
     cl.enqueue_copy(queue, res, res_buf)
+    n = len(raw)
+    size = raw[0].shape[0]
+    res2 = np.reshape(res, (n, size, size))
+    return res2

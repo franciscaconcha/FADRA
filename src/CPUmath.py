@@ -59,11 +59,15 @@ def mean_combine(imgs, sigmaclip=False):
     :param args: array of np.ndarrays
     :return: np.ndarray
     """
-    mean_comb = sp.mean(imgs, axis=0)
-    if sigmaclip:
-        return sigma_clipping(mean_comb)
+    print("LEN: " + str(len(imgs)))
+    if len(imgs) == 1:
+        return imgs[0]
     else:
-        return mean_comb
+        mean_comb = sp.mean(imgs, axis=0)
+        if sigmaclip:
+            return sigma_clipping(mean_comb)
+        else:
+            return mean_comb
 
 
 @_check_array
