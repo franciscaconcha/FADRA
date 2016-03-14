@@ -164,7 +164,7 @@ def CPUreduce(raw, sci_path, bias=None, dark=None, flat=None,
     :return: AstroDir of reduced science images and corresponding master files attached.
     """
     #import dataproc as dp
-    #print(bias.shape, dark.shape, flat.shape)
+    print(len(bias), len(dark), len(flat))
 
     if bias is not None:
         # This is done here for now, otherwise decorator on get_masterX has to be fixed
@@ -200,20 +200,24 @@ def CPUreduce(raw, sci_path, bias=None, dark=None, flat=None,
 
     import pyfits as pf
     i = 0
+    res = []
 
     for r in raw_data:
         s = (r - mb - (md - mb)) / (mf - mb)
+        res.append(s)
         # TODO check what happens with the header
         #s_header = r.readheader()  # Reduced data header is same as raw header for now
         hdu = pf.PrimaryHDU(s)
-        filename = sci_path + "/reduced_" + "%03i.fits" % i
+        filename = sci_path + "/CPU_reduced_" + "%03i.fits" % i
         hdu.writeto(filename)
         i += 1
 
-    return io_dir.AstroDir(sci_path, mb, mf, md)
+    #return io_dir.AstroDir(sci_path, mb, mf, md)
+    return res
 
 
-def GPUreduce(bias, dark, flat, raw, exp_time=None, combine_mode=CPUmath.mean_combine, save_masters=False):
+def GPUreduce(raw, sci_path, bias=None, dark=None, flat=None,
+              combine_mode=CPUmath.mean_combine, exp_time=None, save_masters=False):
     import pyopencl as cl
     import os
     os.environ['PYOPENCL_COMPILER_OUTPUT'] = '1'
@@ -237,14 +241,41 @@ def GPUreduce(bias, dark, flat, raw, exp_time=None, combine_mode=CPUmath.mean_co
 
     warnings.warn('Using combine function: %s' % (combine_mode))
 
-    mb = get_masterbias(bias, combine_mode, save_masters)
-    md = get_masterdark(dark, combine_mode, exp_time, save_masters)
-    m_f = get_masterflat(flat, combine_mode, save_masters)
-    print(mb.shape, md.shape, m_f.shape)
+    if bias is not None:
+        # This is done here for now, otherwise decorator on get_masterX has to be fixed
+        if isinstance(bias, io_dir.AstroDir):
+            print("Is AstroDir")
+            bias_data = bias.readdata()
+            mb = get_masterbias(bias_data, combine_mode, save_masters)
+        else:
+            warnings.warn('Combining bias with function: %s' % (combine_mode))
+            mb = get_masterbias(bias, combine_mode, save_masters)
+    else:
+        mb = raw.bias
+    if dark is not None:
+        if isinstance(dark, io_dir.AstroDir):
+            dark_data = dark.readdata()
+            md = get_masterdark(dark_data, combine_mode, exp_time, save_masters)
+        else:
+            warnings.warn('Combining darks with function: %s' % (combine_mode))
+            md = get_masterdark(dark, combine_mode, exp_time, save_masters)
+    else:
+        md = raw.dark
+    if flat is not None:
+        if isinstance(flat, io_dir.AstroDir):
+            flat_data = flat.readdata()
+            m_f = get_masterflat(flat_data, combine_mode, save_masters)
+        else:
+            warnings.warn('Combining flats with function: %s' % (combine_mode))
+            m_f = get_masterflat(flat, combine_mode, save_masters)
+    else:
+        m_f = raw.flat
+
+    raw_data = raw.readdata()
 
     img = np.array([])
     ss = 0
-    for fi in raw:
+    for fi in raw_data:
         fi = fi - mb
         sh = fi.shape
         ss = sh[0] * sh[1]
@@ -273,4 +304,17 @@ def GPUreduce(bias, dark, flat, raw, exp_time=None, combine_mode=CPUmath.mean_co
     n = len(raw)
     size = raw[0].shape[0]
     res2 = np.reshape(res, (n, size, size))
+
+    mb = mb.reshape(size, size)
+    md = md.reshape(size, size)
+    m_f = m_f.reshape(size, size)
+
+    i = 0
+    for s in res2:
+        hdu = pf.PrimaryHDU(s)
+        filename = sci_path + "/GPU_reduced_" + "%03i.fits" % i
+        hdu.writeto(filename)
+        i += 1
+
+    #return io_dir.AstroDir(sci_path, mb, m_f, md)
     return res2

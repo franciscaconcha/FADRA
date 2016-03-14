@@ -91,70 +91,24 @@ hdu.writeto(filename)
 
 import matplotlib.pyplot as plt
 
-img = np.array([])
-cpu_img = []
-i = 0
-ss = 0
-
-"""for i in images_noisy:
-    sh = i.shape
-    ss = sh[0] * sh[1]
-    data = i.reshape(1, ss)
-    ndata = data[0]
-    img = np.append(img, ndata)
-
-print(len(images_noisy))
-print(images_noisy[0].shape)
-print("**")
-
-#print(img.shape)
-
-dark = darks[0].reshape(1, ss)
-dark2 = np.append(np.append(dark[0], dark[0]), dark[0])
-print(len(dark2))
-
-flat = flat.reshape(1, ss)
-print(len(flat[0]))
-
-img_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=img)
-dark_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=dark[0])
-flat_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=flat[0])
-res_buf = cl.Buffer(ctx, mf.WRITE_ONLY, img.nbytes)
-
-f = open('reduce.cl', 'r')
-programName = "".join(f.readlines())
-
-program = cl.Program(ctx, programName).build()
-
-start = time.clock()
-program.reduce(queue, img.shape, None, dark_buf, flat_buf, img_buf, res_buf) #sizeX, sizeY, sizeZ
-end = time.clock()
-print("GPU: %f s" % (end - start))
-
-res = np.empty_like(img)
-cl.enqueue_copy(queue, res, res_buf)
-res2 = np.reshape(res, (3, size, size))
-print(res2.shape)
-print(len(res2))"""
-from reduction import GPUreduce
-res2 = GPUreduce([darks[0]], [darks[0]], [flat], images_noisy)
-
-#j = []
-#for i in images_noisy:
-#    j.append((i - darks[0])/flat[0].reshape(size, size))
-
-from reduction import CPUreduce
+from reduction import GPUreduce, CPUreduce
 import dataproc as dp
-j_dir = CPUreduce(dp.AstroDir("./reduce_test/"), "./sci_reduced/", darks[0], darks[0], flat)
+res2 = GPUreduce(dp.AstroDir("./reduce_test/"), "./sci_reduced/", [darks[0]], [darks[0]], [flat])
+j = CPUreduce(dp.AstroDir("./reduce_test/"), "./sci_reduced/", [darks[0]], [darks[0]], [flat])
 
 #for t in j:
 #    t = np.round(t, 6)
-
+"""
 j = []
 for t in j_dir:
     data = t.reader()
     j.append(data)
-#print(j)
+
+res2 = []
+for t in res2_dir:
+    data = t.reader()
+    res2.append(data)
+#print(j)"""
 
 fig = plt.figure()
 ax1 = plt.subplot(331)

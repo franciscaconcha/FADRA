@@ -63,7 +63,8 @@ def mean_combine(imgs, sigmaclip=False):
     if len(imgs) == 1:
         return imgs[0]
     else:
-        mean_comb = sp.mean(imgs, axis=0)
+        from scipy import mean
+        mean_comb = mean(imgs, axis=0)
         if sigmaclip:
             return sigma_clipping(mean_comb)
         else:
@@ -79,12 +80,15 @@ def median_combine(imgs, sigmaclip=False):
     :param args: array of np.ndarrays
     :return: np.ndarray
     """
-    from numpy import median
-    median_comb = median(imgs, axis=0)
-    if sigmaclip:
-        return sigma_clipping(median_comb)
+    if len(imgs) == 1:
+        return imgs[0]
     else:
-        return median_comb
+        from numpy import median
+        median_comb = median(imgs, axis=0)
+        if sigmaclip:
+            return sigma_clipping(median_comb)
+        else:
+            return median_comb
 
 @_check_array
 @_check_combine_input
