@@ -1,13 +1,9 @@
 __author__ = 'fran'
 
-import pyopencl as cl
 import pyfits as pf
 import numpy as np
-import os
-import time
-os.environ['PYOPENCL_COMPILER_OUTPUT'] = '1'
 
-size = 100
+size = 3
 
 def zscale(img,  trim = 0.05, contr=1, mask=None):
     """Returns lower and upper limits found by zscale algorithm for improved contrast in astronomical images.
@@ -31,158 +27,58 @@ def zscale(img,  trim = 0.05, contr=1, mask=None):
 
     return b, a*img.size/contr+b
 
-platforms = cl.get_platforms()
-if len(platforms) == 0:
-    print("Failed to find any OpenCL platforms.")
-
-devices = platforms[0].get_devices(cl.device_type.GPU)
-if len(devices) == 0:
-    print("Could not find GPU device, trying CPU...")
-    devices = platforms[0].get_devices(cl.device_type.CPU)
-    if len(devices) == 0:
-        print("Could not find OpenCL GPU or CPU device.")
-
-ctx = cl.Context([devices[0]])
-queue = cl.CommandQueue(ctx)
-mf = cl.mem_flags
-
-# TODO detectar memoria del device para reducir por bloques de imagenes
-# devices[0].get_info(cl.global_mem_size)
-
-from reductionTest import reductionTest
-
-darks, flat, images, images_noisy = reductionTest.generate_images("../../reductionTest/config")
-
-raw_names = []
-t = 0
-
-import shutil
-folder1 = './reduce_test/'
-folder2 = './sci_reduced/'
-folder3 = './calib/'
-for the_file in os.listdir(folder1):
-    file_path = os.path.join(folder1, the_file)
-    if os.path.isfile(file_path):
-        os.unlink(file_path)
-        #elif os.path.isdir(file_path): shutil.rmtree(file_path)
-for the_file in os.listdir(folder2):
-    file_path = os.path.join(folder2, the_file)
-    if os.path.isfile(file_path):
-        os.unlink(file_path)
-        #elif os.path.isdir(file_path): shutil.rmtree(file_path)
-for the_file in os.listdir(folder3):
-    file_path = os.path.join(folder3, the_file)
-    if os.path.isfile(file_path):
-        os.unlink(file_path)
-        #elif os.path.isdir(file_path): shutil.rmtree(file_path)
-
-for i in images_noisy:
-    hdu = pf.PrimaryHDU(i)
-    filename = "./reduce_test/reduced_" + "%03i.fits" % t
-    hdu.writeto(filename)
-    raw_names.append(filename)
-    pf.open(filename)[0]
-    t += 1
-print("saved")
-
-hdu = pf.PrimaryHDU(darks[0])
-filename = "./calib/bias.fits"
-hdu.writeto(filename)
-
 import matplotlib.pyplot as plt
 
-img = np.array([])
-cpu_img = []
-i = 0
-ss = 0
-
-for i in images_noisy:
-    sh = i.shape
-    ss = sh[0] * sh[1]
-    data = i.reshape(1, ss)
-    ndata = data[0]
-    img = np.append(img, ndata)
-
-print(len(images_noisy))
-print(images_noisy[0].shape)
-print("**")
-
-#print(img.shape)
-
-dark = darks[0].reshape(1, ss)
-dark2 = np.append(np.append(dark[0], dark[0]), dark[0])
-print(len(dark2))
-
-flat = flat.reshape(1, ss)
-print(len(flat[0]))
-
-img_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=img)
-dark_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=dark[0])
-flat_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=flat[0])
-res_buf = cl.Buffer(ctx, mf.WRITE_ONLY, img.nbytes)
-
-f = open('reduce.cl', 'r')
-programName = "".join(f.readlines())
-
-program = cl.Program(ctx, programName).build()
-
-start = time.clock()
-program.reduce(queue, img.shape, None, dark_buf, flat_buf, img_buf, res_buf) #sizeX, sizeY, sizeZ
-end = time.clock()
-print("GPU: %f s" % (end - start))
-
-res = np.empty_like(img)
-cl.enqueue_copy(queue, res, res_buf)
-res2 = np.reshape(res, (3, size, size))
-print(res2.shape)
-print(len(res2))
-
-#j = []
-#for i in images_noisy:
-#    j.append((i - darks[0])/flat[0].reshape(size, size))
-
 from reduction import CPUreduce
+from CPUmath import mean_filter, median_filter
 import dataproc as dp
-j_dir = CPUreduce(dp.AstroDir("./reduce_test/"), "./sci_reduced/", darks[0], darks[0], flat[0])
 
-#for t in j:
-#    t = np.round(t, 6)
+#j = CPUreduce(dp.AstroDir("./reduce_test/"), "./sci_reduced/", dp.AstroDir("./calib/"), [darks[0]], [flat])
 
-j = []
-for t in j_dir:
-    data = t.reader()
-    j.append(data)
-#print(j)
+im = pf.open("./reduce_test/reduced_002.fits")
+im_data = im[0].data
 
 fig = plt.figure()
-ax1 = plt.subplot(331)
+ax1 = plt.subplot(231)
 ax1.set_title("Original")
-plt.imshow(images_noisy[0])
-plt.subplot(334)
-plt.imshow(images_noisy[1])
-plt.subplot(337)
-plt.imshow(images_noisy[2])
+l, u = zscale(im_data)
+plt.imshow(im_data, vmin=l, vmax=u)
 
-ax2 = plt.subplot(332)
-ax2.set_title("GPU")
-l, u = zscale(res2[0])
-plt.imshow(res2[0], vmin=l, vmax=u)
-plt.subplot(335)
-l, u = zscale(res2[1])
-plt.imshow(res2[1], vmin=l, vmax=u)
-plt.subplot(338)
-l, u = zscale(res2[2])
-plt.imshow(res2[2], vmin=l, vmax=u)
+ax2 = plt.subplot(232)
+title = "Mine\nMean, " + "%d px window" % size
+ax2.set_title(title)
+im_mean = mean_filter(im_data, size)
+l, u = zscale(im_mean)
+plt.imshow(im_mean, vmin=l, vmax=u)
 
-ax3 = plt.subplot(333)
-ax3.set_title("CPU")
-l, u = zscale(j[0])
-plt.imshow(j[0], vmin=l, vmax=u)
-plt.subplot(336)
-l, u = zscale(j[1])
-plt.imshow(j[1], vmin=l, vmax=u)
-plt.subplot(339)
-l, u = zscale(j[2])
-plt.imshow(j[2], vmin=l, vmax=u)
+ax3 = plt.subplot(233)
+title = "Mine\nMedian, " + "%d px window" % size
+ax3.set_title(title)
+im_median = median_filter(im_data, size)
+l, u = zscale(im_median)
+plt.imshow(im_median, vmin=l, vmax=u)
+
+import scipy.signal, scipy.ndimage
+
+ax1 = plt.subplot(234)
+ax1.set_title("Original")
+l, u = zscale(im_data)
+plt.imshow(im_data, vmin=l, vmax=u)
+
+ax2 = plt.subplot(235)
+title = "Scipy\nMean, " + "%d px window" % size
+ax2.set_title(title)
+kernel = np.ones((im_data.shape))/(size*size)
+#im_mean = scipy.ndimage.filters.convolve(im_data, kernel)
+im_mean = scipy.signal.convolve(im_data, kernel)
+l, u = zscale(im_mean)
+plt.imshow(im_mean, vmin=l, vmax=u)
+
+ax3 = plt.subplot(236)
+title = "Scipy\nMedian, " + "%d px window" % size
+ax3.set_title(title)
+im_median = scipy.signal.medfilt(im_data, size)
+l, u = zscale(im_median)
+plt.imshow(im_median, vmin=l, vmax=u)
 
 plt.show()
