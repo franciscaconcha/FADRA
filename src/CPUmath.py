@@ -180,8 +180,8 @@ def median_filter(image, kernel_size):
     from numpy import median
     d = median(c, axis=0)
     dif = d.shape[0] - image.shape[0]
-    print(d.shape)
-    print("dif = " + str(dif))
+    #print(d.shape)
+    #print("dif = " + str(dif))
     if dif % 2 == 0:
         return d[dif/2:-dif/2, dif/2:-dif/2]
     else:
@@ -199,8 +199,8 @@ def mean_filter(image, kernel_size):
     c = shift_generator(image, k, 'constant')
     d = sp.mean(c, axis=0)
     dif = d.shape[0] - image.shape[0]
-    print(d.shape)
-    print("dif = " + str(dif))
+    #print(d.shape)
+    #print("dif = " + str(dif))
     if dif % 2 == 0:
         return d[dif/2:-dif/2, dif/2:-dif/2]
     else:

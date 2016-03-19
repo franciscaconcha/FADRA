@@ -44,7 +44,7 @@ out_g = cl_array.Array(queue, out.shape, dtype='int32')
 #mask_g = cl.Buffer(ctx, MF.READ_ONLY | MF.COPY_HOST_PTR, hostbuf=mask)
 #out_g = cl.Buffer(ctx, MF.WRITE_ONLY, img.nbytes)
 
-f = open('gaussian.cl', 'r')
+f = open('convolve.cl', 'r')
 programName = "".join(f.readlines())
 
 program = cl.Program(ctx, programName).build()
