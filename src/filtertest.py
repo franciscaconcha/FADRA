@@ -128,7 +128,8 @@ defines = """
     #define TWICE_HALF_FILTER_SIZE %d
     #define HALF_FILTER_SIZE_IMAGE_W %d
     """ % (im_size, im_size, size, hfs, 2*hfs, im_size*hfs)
-programName = defines + "".join(f.readlines())
+#programName = defines + "".join(f.readlines())
+programName = "".join(f.readlines())
 
 program = cl.Program(ctx, programName).build()
 program.convolve(queue, im_data.shape, None, img_buf, kernel_buf, res_buf)
