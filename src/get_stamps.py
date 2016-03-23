@@ -82,9 +82,9 @@ def get_stamps(sci, master_bias, master_dark, master_flat, target_coords, stamp_
     return all_cubes
 
 
-io = dp.AstroDir("/media/Fran/2011_rem/rawsci70/raw6")
+io = dp.AstroDir("./sci_reduced")
 # OJO coordenadas van Y,X
-res = get_stamps(io, None, None, None, [[485, 737], [127, 521]], 30)
+res = get_stamps(io, None, None, None, [[32, 75], [28, 59]], 5)
 print(len(res), len(res[0]), res[0][0].shape)
 
 import matplotlib.pyplot as plt
@@ -94,10 +94,10 @@ l = len(res[0])
 n = len(res)
 
 for i in range(1, l + 1):
-    plt.subplot(2, l, i)
+    plt.subplot(n, l, i)
     lmin, lmax = zscale(res[0][i - 1])
     plt.imshow(res[0][i - 1], vmin=lmin, vmax=lmax, cmap=plt.get_cmap('gray'))
-    plt.subplot(2, l, l + i)
+    plt.subplot(n, l, l + i)
     lmin, lmax = zscale(res[1][i - 1])
     plt.imshow(res[1][i - 1], vmin=lmin, vmax=lmax, cmap=plt.get_cmap('gray'))
 
