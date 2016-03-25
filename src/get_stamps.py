@@ -46,45 +46,68 @@ def centroid(orig_arr, medsub=True):
     return cy, cx
 
 
-def get_stamps(sci, master_bias, master_dark, master_flat, target_coords, stamp_rad):
+def get_stamps(sci, mdark, mflat, target_coords, stamp_rad):
     """
 
-    :param data:
-    :param master_bias:
-    :param master_dark:
-    :param master_flat:
+    :param sci:
+    :type sci: AstroDir
     :param target_coords: [[t1x, t1y], [t2x, t2y], ...]
-    :param stamp_size:
+    :param stamp_rad:
     :return:
     """
-    all_cubes = []
+    all_cubes, dark_cubes, flat_cubes = [], [], []
     data = sci.readdata()
 
     for c in target_coords:
         cx, cy = c[0], c[1]
-        cube = []
+        cube, dcube, fcube = [], [], []
         stamp = data[0][(cx-stamp_rad):(cx+stamp_rad+1), (cy-stamp_rad):(cy+stamp_rad+1)]
-        #print stamp
         cx0, cy0 = centroid(stamp)
         cx = cx - stamp_rad + cx0.round()
         cy = cy - stamp_rad + cy0.round()
         stamp = data[0][(cx-stamp_rad):(cx+stamp_rad+1), (cy-stamp_rad):(cy+stamp_rad+1)]
-        print(cx, cy)
         cube.append(stamp)
+        dark_stamp = mdark[(cx-stamp_rad):(cx+stamp_rad+1), (cy-stamp_rad):(cy+stamp_rad+1)]
+        flat_stamp = mflat[(cx-stamp_rad):(cx+stamp_rad+1), (cy-stamp_rad):(cy+stamp_rad+1)]
+        dcube.append(dark_stamp)
+        fcube.append(flat_stamp)
         for d in data[1:]:
             stamp = d[(cx-stamp_rad):(cx+stamp_rad+1), (cy-stamp_rad):(cy+stamp_rad+1)]
             cx0, cy0 = centroid(stamp)
             cx = cx - stamp_rad + cx0.round()
             cy = cy - stamp_rad + cy0.round()
             cube.append(stamp)
+            dark_stamp = mdark[(cx-stamp_rad):(cx+stamp_rad+1), (cy-stamp_rad):(cy+stamp_rad+1)]
+            flat_stamp = mflat[(cx-stamp_rad):(cx+stamp_rad+1), (cy-stamp_rad):(cy+stamp_rad+1)]
+            dcube.append(dark_stamp)
+            fcube.append(flat_stamp)
         all_cubes.append(cube)
+        dark_cubes.append(dcube)
+        flat_cubes.append(fcube)
 
-    return all_cubes
+    return all_cubes, dark_cubes, flat_cubes
+
+def CPUphot(sci, dark, flat, sky):
+    n_targets = len(sci)
+    for n in range(n_targets):
+        for s, d, f in zip(sci[n], dark[n], flat[n]):
+            red = (s - d)/(f - d)
 
 
-io = dp.AstroDir("./sci_reduced")
+
+def photometry(sci, mbias, mdark, mflat, target_coords, stamp_rad, sky, gpu=False):
+    sci_stamps, dark_stamps, flat_stamps = get_stamps(sci, mdark, mflat, target_coords, stamp_rad)
+
+    if gpu:
+        return GPUphot(sci_stamps, dark_stamps, flat_stamps, sky)
+    else:
+        return CPUphot(sci_stamps, dark_stamps, flat_stamps, sky)
+
+
+
+io = dp.AstroDir("/media/Fran/2011_rem/rawsci70/raw6")
 # OJO coordenadas van Y,X
-res = get_stamps(io, None, None, None, [[32, 75], [28, 59]], 5)
+res = get_stamps(io, None, None, None, [[577, 185], [488, 739]], 20)
 print(len(res), len(res[0]), res[0][0].shape)
 
 import matplotlib.pyplot as plt
