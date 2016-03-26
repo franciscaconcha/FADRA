@@ -1,4 +1,5 @@
-__kernel void reduce(__constant float* dark, __constant float* flat, __global float* images, __global float* res)
+__kernel void reduce(__constant float* dark, __constant float* flat,
+                    __global float* images, __global float* res)
 {
     const int i = (int)get_global_id(0);
     const int s = 100 * 100;
