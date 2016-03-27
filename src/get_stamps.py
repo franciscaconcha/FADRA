@@ -53,6 +53,7 @@ def bipol(coef, x, y):
 
     if deg * deg != coef.size:
         print("Malformed coefficient: " + str(coef.size) + "(size) != " + str(deg) + "(dim)^2")
+
     for i in sp.arange(coef.shape[0]):
         for j in sp.arange(i + 1):
             plane += coef[i, j] * (x ** j) * (y ** (i - j))
@@ -130,63 +131,53 @@ def get_stamps(sci, target_coords, stamp_rad):
     all_cubes = []
     data = sci.readdata()
     new_coords = []
+    stamp_coords =[]
 
     for c in target_coords:
         cx, cy = c[0], c[1]
-        cube, new_c = [], []
-        stamp = data[0][(cx-stamp_rad):(cx+stamp_rad+1), (cy-stamp_rad):(cy+stamp_rad+1)]
+        cube, new_c, st_c = [], [], []
+        stamp = np.array(data[0][(cx-stamp_rad):(cx+stamp_rad+1), (cy-stamp_rad):(cy+stamp_rad+1)])
         cx0, cy0 = centroid(stamp)
+        st_c.append([cx0.round(), cy0.round()])
         cx = cx - stamp_rad + cx0.round()
         cy = cy - stamp_rad + cy0.round()
-        stamp = data[0][(cx-stamp_rad):(cx+stamp_rad+1), (cy-stamp_rad):(cy+stamp_rad+1)]
+        stamp = np.array(data[0][(cx-stamp_rad):(cx+stamp_rad+1), (cy-stamp_rad):(cy+stamp_rad+1)])
         cube.append(stamp)
         new_c.append([cx, cy])
         for d in data[1:]:
-            stamp = d[(cx-stamp_rad):(cx+stamp_rad+1), (cy-stamp_rad):(cy+stamp_rad+1)]
+            stamp = np.array(d[(cx-stamp_rad):(cx+stamp_rad+1), (cy-stamp_rad):(cy+stamp_rad+1)])
             cx0, cy0 = centroid(stamp)
+            st_c.append([cx0.round(), cy0.round()])
             cx = cx - stamp_rad + cx0.round()
             cy = cy - stamp_rad + cy0.round()
             cube.append(stamp)
             new_c.append([cx, cy])
         all_cubes.append(cube)
         new_coords.append(new_c)
+        stamp_coords.append(st_c)
 
-    """import matplotlib.pyplot as plt
-
-    fig1 = plt.figure()
-    l = len(all_cubes[0])
-    n = len(all_cubes)
-    print("*")
-    print l, n
-
-    for i in range(1, l + 1):
-        plt.subplot(n, l, i)
-        lmin, lmax = zscale(all_cubes[0][i - 1])
-        plt.imshow(all_cubes[0][i - 1], vmin=lmin, vmax=lmax, cmap=plt.get_cmap('gray'))
-        plt.subplot(n, l, l + i)
-        lmin, lmax = zscale(all_cubes[1][i - 1])
-        plt.imshow(all_cubes[1][i - 1], vmin=lmin, vmax=lmax, cmap=plt.get_cmap('gray'))
-
-    plt.show()"""
-
-    return all_cubes, new_coords
+    return all_cubes, new_coords, stamp_coords
 
 
-def CPUphot(sci, dark, flat, coords, ap, sky, stamp_rad, deg=1, gain=None, ron=None):
+def CPUphot(sci, dark, flat, coords, stamp_coords, ap, sky, stamp_rad, deg=1, gain=None, ron=None):
     n_targets = len(sci)
     n_frames = len(sci[0])
     all_phot = []
     all_err = []
     for n in range(n_targets):  # For each target
         target = sci[n]
-        c = coords[n]
+        c = stamp_coords[n]
+        c_full = coords[n]
         t_phot, t_err = [], []
         for t in range(n_frames):
-            cx, cy = c[t][0], c[t][1]
+            cx, cy = c[0][0], c[0][1]  # TODO ojo con esto
+            cxf, cyf = c_full[t][0], c_full[t][1]
             cs = [cy, cx]
+
             # Reduction!
-            dark_stamp = dark[(cx-stamp_rad):(cx+stamp_rad+1), (cy-stamp_rad):(cy+stamp_rad+1)]
-            flat_stamp = flat[(cx-stamp_rad):(cx+stamp_rad+1), (cy-stamp_rad):(cy+stamp_rad+1)]
+            # Callibration stamps are obtained using coordinates from the "full" image
+            dark_stamp = dark[(cxf-stamp_rad):(cxf+stamp_rad+1), (cyf-stamp_rad):(cyf+stamp_rad+1)]
+            flat_stamp = flat[(cxf-stamp_rad):(cxf+stamp_rad+1), (cyf-stamp_rad):(cyf+stamp_rad+1)]
             data = (target[t] - dark_stamp) / flat_stamp
 
             # Photometry!
@@ -204,26 +195,23 @@ def CPUphot(sci, dark, flat, coords, ap, sky, stamp_rad, deg=1, gain=None, ron=N
             else:
                 import scipy.optimize as op
                 idx = (d > sky[0]) * (d < sky[1])
-                # TODO check this! Problems in op.leastsq
                 errfunc = lambda coef, x, y, z: (bipol(coef, x, y) - z).flatten()
                 coef0 = sp.zeros((deg, deg))
                 coef0[0, 0] = data[idx].mean()
-                fit, cov, info, mesg, success = op.leastsq(errfunc, coef0.flatten(), idx.flatten(), args=(x[idx], y[idx], data[idx]), full_output=1)
+                fit, cov, info, mesg, success = op.leastsq(errfunc, coef0.flatten(), args=(x[idx], y[idx], data[idx]), full_output=1)
 
             # Apply sky correction
             n_pix_sky = idx.sum()
-            sky = bipol(fit, x, y)
-            sky_std = (data-sky)[idx].std()
-            res = data - sky  # minus sky
-            ##res = data - n_pix_sky
+            sky_fit = bipol(fit, x, y)
+            sky_std = (data-sky_fit)[idx].std()
+            res = data - sky_fit  # minus sky
 
             res2 = res[d < ap*4].ravel()
             d2 = d[d < ap*4].ravel()
 
             tofit = lambda d, h, sig: h*dp.gauss(d, sig, ndim=1)
 
-            #import scipy.optimize as op
-            # TODO check this as well
+            import scipy.optimize as op
             try:
                 sig, cov = op.curve_fit(tofit, d2, res2, sigma=1/sp.sqrt(sp.absolute(res2)), p0=[max(res2), ap/3])
             except RuntimeError:
@@ -251,13 +239,10 @@ def CPUphot(sci, dark, flat, coords, ap, sky, stamp_rad, deg=1, gain=None, ron=N
     return ts.TimeSeries(all_phot, all_err, None)
 
 
-def GPUphot(sci, dark, flat, coords, ap, sky, stamp_rad, deg=1, gain=None, ron=None):
+def GPUphot(sci, dark, flat, coords, stamp_coords, ap, sky, stamp_rad, deg=1, gain=None, ron=None):
     import pyopencl as cl
     import os
     os.environ['PYOPENCL_COMPILER_OUTPUT'] = '1'
-
-    #print(bi, dark.shape, flat.shape)
-
     platforms = cl.get_platforms()
     if len(platforms) == 0:
         print("Failed to find any OpenCL platforms.")
@@ -278,26 +263,37 @@ def GPUphot(sci, dark, flat, coords, ap, sky, stamp_rad, deg=1, gain=None, ron=N
     all_phot = []
     all_err = []
     for n in range(n_targets):  # For each target
-        target = sci[n]
-        c = coords[n]
+        target = np.array(sci[n])
+        c = stamp_coords[n]
         t_phot, t_err = [], []
         cx, cy = c[0][0], c[0][1]
         dark_stamp = dark[(cx-stamp_rad):(cx+stamp_rad+1), (cy-stamp_rad):(cy+stamp_rad+1)]
         flat_stamp = flat[(cx-stamp_rad):(cx+stamp_rad+1), (cy-stamp_rad):(cy+stamp_rad+1)]
 
-        target_flat = target.flatten()
-        dark_flat = dark_stamp.flatten()
-        flat_flat = flat_stamp.flatten()
+        target_flat = []
+        for f in target:
+            s = f.shape
+            ss = s[0] * s[1]
+            ft = f.reshape(1, ss)
+            target_flat.append(ft[0])
 
-        target_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=target_flat)
-        dark_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=dark_flat)
-        flat_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=flat_flat)
-        res_buf = cl.Buffer(ctx, mf.WRITE_ONLY, target_flat.nbytes)
+        target_f = np.array([item for sublist in target_flat for item in sublist])
+        #target_f = target_flat.reshape(1, len(target_flat))
+
+        flattened_dark = dark_stamp.flatten()
+        dark_f = flattened_dark.reshape(1, len(flattened_dark))
+
+        flattened_flat = flat_stamp.flatten()
+        flat_f = flattened_flat.reshape(1, len(flattened_flat))
+
+        target_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=target_f)
+        dark_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=dark_f[0])
+        flat_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=flat_f[0])
+        res_buf = cl.Buffer(ctx, mf.WRITE_ONLY, target_f.nbytes)
 
         f = open('photometry.cl', 'r')
         defines = """
                     #define n %d
-                    #define a(x, y) a[x*n + y]
                     #define centerX %d
                     #define centerY %d
                     #define aperture %d
@@ -307,24 +303,26 @@ def GPUphot(sci, dark, flat, coords, ap, sky, stamp_rad, deg=1, gain=None, ron=N
         programName = defines + "".join(f.readlines())
 
         program = cl.Program(ctx, programName).build()
-        program.photometry(queue, target_buf.shape, None, target_buf, dark_buf, flat_buf, res_buf)  # sizeX, sizeY, sizeZ
+        program.photometry(queue, target_f.shape, None, target_buf, dark_buf, flat_buf, res_buf)  # sizeX, sizeY, sizeZ
 
         res = np.empty_like(target_flat)
         cl.enqueue_copy(queue, res, res_buf)
+        #print res
         all_phot.append(res)
         all_err.append(res)
+        #print("ok!")
 
     import TimeSeries as ts
     return ts.TimeSeries(all_phot, all_err, None)
 
 
 def photometry(sci, mbias, mdark, mflat, target_coords, aperture, stamp_rad, sky, gpu=False):
-    sci_stamps, new_coords = get_stamps(sci, target_coords, stamp_rad)
+    sci_stamps, new_coords, stamp_coords = get_stamps(sci, target_coords, stamp_rad)
 
     if gpu:
-        return GPUphot(sci_stamps, mdark-mbias, mflat-mbias, new_coords, sky, stamp_rad)
+        return GPUphot(sci_stamps, mdark-mbias, mflat-mbias, new_coords, stamp_coords, aperture, sky, stamp_rad)
     else:
-        return CPUphot(sci_stamps, mdark-mbias, mflat-mbias, new_coords, aperture, sky, stamp_rad)
+        return CPUphot(sci_stamps, mdark-mbias, mflat-mbias, new_coords, stamp_coords, aperture, sky, stamp_rad)
 
 
 
@@ -336,7 +334,7 @@ dark = np.zeros(io.readdata()[0].shape)
 bias = np.zeros(io.readdata()[0].shape)
 flat = np.ones(io.readdata()[0].shape)
 
-res = photometry(io, bias, dark, flat, [[577, 185], [488, 739]], 8, 50, [10, 15])
+res = photometry(io, bias, dark, flat, [[577, 185], [488, 739]], 8, 50, [10, 15])#, gpu=True)
 #print(len(res), len(res[0]), res[0][0].shape)
 
 import matplotlib.pyplot as plt

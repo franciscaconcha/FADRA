@@ -272,6 +272,7 @@ def GPUreduce(raw, sci_path, bias=None, dark=None, flat=None,
         m_f = raw.flat
 
     raw_data = raw.readdata()
+    print raw_data.__class__
 
     img = np.array([])
     ss = 0
@@ -283,9 +284,11 @@ def GPUreduce(raw, sci_path, bias=None, dark=None, flat=None,
         ndata = data[0]
         img = np.append(img, ndata)
 
+    print mb.shape, md.shape, m_f.shape
     mb = mb.reshape(1, ss)
     md = md.reshape(1, ss)
     m_f = m_f.reshape(1, ss)
+    print mb.shape, md.shape, m_f.shape
 
     # GPU reduction
     img_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=img)
