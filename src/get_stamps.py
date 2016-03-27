@@ -265,10 +265,12 @@ def GPUphot(sci, dark, flat, coords, stamp_coords, ap, sky, stamp_rad, deg=1, ga
     for n in range(n_targets):  # For each target
         target = np.array(sci[n])
         c = stamp_coords[n]
+        c_full = coords[n]
         t_phot, t_err = [], []
         cx, cy = c[0][0], c[0][1]
-        dark_stamp = dark[(cx-stamp_rad):(cx+stamp_rad+1), (cy-stamp_rad):(cy+stamp_rad+1)]
-        flat_stamp = flat[(cx-stamp_rad):(cx+stamp_rad+1), (cy-stamp_rad):(cy+stamp_rad+1)]
+        cxf, cyf = c_full[n][0], c_full[n][1]
+        dark_stamp = dark[(cxf-stamp_rad):(cxf+stamp_rad+1), (cyf-stamp_rad):(cyf+stamp_rad+1)]
+        flat_stamp = flat[(cxf-stamp_rad):(cxf+stamp_rad+1), (cyf-stamp_rad):(cyf+stamp_rad+1)]
 
         target_flat = []
         for f in target:
@@ -278,6 +280,7 @@ def GPUphot(sci, dark, flat, coords, stamp_coords, ap, sky, stamp_rad, deg=1, ga
             target_flat.append(ft[0])
 
         target_f = np.array([item for sublist in target_flat for item in sublist])
+        #print len(target_flat), len(target_f)
         #target_f = target_flat.reshape(1, len(target_flat))
 
         flattened_dark = dark_stamp.flatten()
@@ -289,7 +292,7 @@ def GPUphot(sci, dark, flat, coords, stamp_coords, ap, sky, stamp_rad, deg=1, ga
         target_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=target_f)
         dark_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=dark_f[0])
         flat_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=flat_f[0])
-        res_buf = cl.Buffer(ctx, mf.WRITE_ONLY, target_f.nbytes)
+        res_buf = cl.Buffer(ctx, mf.WRITE_ONLY, np.zeros((1, len(target_flat)), dtype=np.float32).nbytes)
 
         f = open('photometry.cl', 'r')
         defines = """
@@ -299,19 +302,21 @@ def GPUphot(sci, dark, flat, coords, stamp_coords, ap, sky, stamp_rad, deg=1, ga
                     #define aperture %d
                     #define sky_inner %d
                     #define sky_outer %d
-                """ % (stamp_rad, cx, cy, ap, sky[0], sky[1])
+                """ % (2*stamp_rad, cx, cy, ap, sky[0], sky[1])
         programName = defines + "".join(f.readlines())
 
         program = cl.Program(ctx, programName).build()
         program.photometry(queue, target_f.shape, None, target_buf, dark_buf, flat_buf, res_buf)  # sizeX, sizeY, sizeZ
 
-        res = np.empty_like(target_flat)
+        res = np.zeros((1, len(target_flat)), dtype=np.float32)
         cl.enqueue_copy(queue, res, res_buf)
+        #print("res")
         #print res
         all_phot.append(res)
         all_err.append(res)
         #print("ok!")
 
+    print all_phot
     import TimeSeries as ts
     return ts.TimeSeries(all_phot, all_err, None)
 
@@ -334,8 +339,9 @@ dark = np.zeros(io.readdata()[0].shape)
 bias = np.zeros(io.readdata()[0].shape)
 flat = np.ones(io.readdata()[0].shape)
 
-res = photometry(io, bias, dark, flat, [[577, 185], [488, 739]], 8, 50, [10, 15])#, gpu=True)
-#print(len(res), len(res[0]), res[0][0].shape)
+res = photometry(io, bias, dark, flat, [[577, 185], [488, 739]], 8, 50, [10, 15], gpu=True)
+print(len(res[0]), res[0][0].shape)
+print res[1]
 
 import matplotlib.pyplot as plt
 
@@ -345,7 +351,10 @@ n = len(res.channels)
 print("*")
 print l, n
 
-for i in range(1, l + 1):
+plt.imshow(res[0])
+plt.show()
+
+"""for i in range(1, l + 1):
     plt.subplot(n, l, i)
     #lmin, lmax = zscale(res.channels[0][i - 1])
     plt.imshow(res.channels[0][i - 1])#, vmin=lmin, vmax=lmax, cmap=plt.get_cmap('gray'))
@@ -353,4 +362,4 @@ for i in range(1, l + 1):
     #lmin, lmax = zscale(res.channels[1][i - 1])
     plt.imshow(res.channels[1][i - 1])#, vmin=lmin, vmax=lmax, cmap=plt.get_cmap('gray'))
 
-plt.show()
+plt.show()"""
