@@ -1,15 +1,15 @@
 __kernel void photometry(__global float* stamp, __constant float* dark,
                         __constant float* flat, __global float* output)
-                        //__local float* local_data)
+                        //__local float* local_stamp)
 {
     const int x = (int)get_global_id(0);
     const int s = n * n;
 
-   //for(int l = 0; l < s; l++){
-   //     local_data[l] = stamp[x*s + l];
-   //}
+   /*for(int l = 0; l < s; l++){
+        stamp[l] = lstamp[x*s + l];
+   }
 
-   //barrier(CLK_LOCAL_MEM_FENCE);
+   barrier(CLK_LOCAL_MEM_FENCE);*/
 
    float2 center = (float2)(centerX, centerY);
    float sum = 0;

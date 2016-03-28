@@ -130,6 +130,8 @@ def get_stamps(sci, target_coords, stamp_rad):
     """
     all_cubes = []
     data = sci.readdata()
+    epoch = sci.getheaderval('MJD-OBS')
+    labels = sci.getheaderval('OBJECT')
     new_coords = []
     stamp_coords =[]
 
@@ -156,7 +158,7 @@ def get_stamps(sci, target_coords, stamp_rad):
         new_coords.append(new_c)
         stamp_coords.append(st_c)
 
-    return all_cubes, new_coords, stamp_coords
+    return all_cubes, new_coords, stamp_coords, epoch, labels[-2:]
 
 
 def CPUphot(sci, dark, flat, coords, stamp_coords, ap, sky, stamp_rad, deg=1, gain=None, ron=None):
@@ -310,11 +312,8 @@ def GPUphot(sci, dark, flat, coords, stamp_coords, ap, sky, stamp_rad, deg=1, ga
 
         res = np.zeros((1, len(target_flat)), dtype=np.float32)
         cl.enqueue_copy(queue, res, res_buf)
-        #print("res")
-        #print res
         all_phot.append(res)
         all_err.append(res)
-        #print("ok!")
 
     print all_phot
     import TimeSeries as ts
@@ -322,13 +321,18 @@ def GPUphot(sci, dark, flat, coords, stamp_coords, ap, sky, stamp_rad, deg=1, ga
 
 
 def photometry(sci, mbias, mdark, mflat, target_coords, aperture, stamp_rad, sky, gpu=False):
-    sci_stamps, new_coords, stamp_coords = get_stamps(sci, target_coords, stamp_rad)
+    sci_stamps, new_coords, stamp_coords, epoch, labels = get_stamps(sci, target_coords, stamp_rad)
+    print epoch
 
     if gpu:
-        return GPUphot(sci_stamps, mdark-mbias, mflat-mbias, new_coords, stamp_coords, aperture, sky, stamp_rad)
+        ts = GPUphot(sci_stamps, mdark-mbias, mflat-mbias, new_coords, stamp_coords, aperture, sky, stamp_rad)
     else:
-        return CPUphot(sci_stamps, mdark-mbias, mflat-mbias, new_coords, stamp_coords, aperture, sky, stamp_rad)
+        ts = CPUphot(sci_stamps, mdark-mbias, mflat-mbias, new_coords, stamp_coords, aperture, sky, stamp_rad)
 
+    ts.set_epoch(epoch)
+    labels[1] = 'REF1'
+    ts.set_ids(labels)
+    return ts
 
 
 io = dp.AstroDir("/media/Fran/2011_rem/rawsci70/raw6")
@@ -339,20 +343,12 @@ dark = np.zeros(io.readdata()[0].shape)
 bias = np.zeros(io.readdata()[0].shape)
 flat = np.ones(io.readdata()[0].shape)
 
-res = photometry(io, bias, dark, flat, [[577, 185], [488, 739]], 8, 50, [10, 15], gpu=True)
-print(len(res[0]), res[0][0].shape)
-print res[1]
+res = photometry(io, bias, dark, flat, [[577, 185], [488, 739]], 8, 50, [10, 15])#, gpu=True)
+#print(len(res[0]), res[0][0].shape)
+#print res[1]
 
-import matplotlib.pyplot as plt
+res.plot()
 
-fig1 = plt.figure()
-l = len(res.channels[0])
-n = len(res.channels)
-print("*")
-print l, n
-
-plt.imshow(res[0])
-plt.show()
 
 """for i in range(1, l + 1):
     plt.subplot(n, l, i)

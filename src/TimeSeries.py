@@ -6,13 +6,16 @@ import numpy as np
 
 class TimeSeries(object):
 
-    def __init__(self, data, errors, ids):
+    def __init__(self, data, errors, ids=None, epoch=None):
         self.channels = data  # [[target1_im1, target1_im2, ...], [target2_im1, target2_im2, ...]]
         self.errors = errors
         # [[error_target1_im1, error_target1_im2, ...], [error_target2_im1, error_target2_im2, ...]]
         self.group = [1] + [0 for i in range(len(data)-1)]
         # Default grouping: 1st coordinate is 1 group, all other objects are another group
-        self.ids = ids  # Dictionary for names?
+        if ids is not None:
+            self.flx = self.set_ids(ids)  # Dictionary for names?
+        else:
+            self.flx = {}
 
         self.channels.append([])  # Group 1 operation result; is overwritten every time a new op is defined
         self.errors.append([])
@@ -20,12 +23,20 @@ class TimeSeries(object):
         self.channels.append([])  # Group 2 operation result; is overwritten every time a new op is defined
         self.errors.append([])
 
-    def __getitem__(self, item):
+        self.epoch = epoch
+
+    def __getitem__(self, item, error=False):
         # This is so I can do ts[0]/ts[2] and it works directly with the channels!
         try:
-            return self.channels[item]
+            if error is False:
+                return self.channels[item]
+            else:
+                return self.errors[item]
         except TypeError:
-            return self.channels[self.ids.index(item)]
+            if error is False:
+                return self.channels[self.ids.index(item)]
+            else:
+                return self.errors[self.ids.index(item)]
 
     def group1(self):
         return [self.channels[i] for i in range(len(self.channels) - 2) if self.group[i]]
@@ -41,6 +52,15 @@ class TimeSeries(object):
 
     def errors_group2(self):
         return [self.errors[i] for i in range(len(self.errors) - 2) if not self.group[i]]
+
+    def set_ids(self, ids):
+        self.ids = ids
+        for i in range(len(self.ids)):
+            self.flx[self.ids[i]] = self.channels[i]
+        return self.flx
+
+    def set_epoch(self, e):
+        self.epoch = e
 
     def mean(self, group_id):
         if group_id > 2:
@@ -81,3 +101,41 @@ class TimeSeries(object):
         self.errors[-group_id] = np.sqrt(err)
 
         return self.channels[-group_id]
+
+    def plot(self, label=None, axes=None):
+        """Display the timeseries data: flux (with errors) as function of mjd
+
+        :param label: Specify a single star to plot
+        :rtype label: basestring
+
+        :rtype: None (and plot display)
+        """
+        import dataproc as dp
+        fig, ax, epoch = dp.axesfig_xdate(axes, self.epoch)
+
+        if label is None:
+            disp = self.flx.keys()
+        else:
+            disp = [label]
+
+        # TODO check yerr
+        for lab in disp:
+            if self.__getitem__(lab, error=True) is None:
+                yerr = None
+            else:
+                yerr = self.__getitem__(lab, error=True)
+
+            ax.errorbar(epoch,
+                        self.flx[lab],
+                        #yerr=yerr,
+                        marker="o",
+                        label=lab)
+
+        ax.set_title("Timeseries Data")
+        ax.set_xlabel("MJD")
+        ax.set_ylabel("Flux")
+
+        ax.legend()
+        import matplotlib.pyplot as plt
+        plt.show()
+        #return
