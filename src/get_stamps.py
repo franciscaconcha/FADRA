@@ -256,6 +256,10 @@ def GPUphot(sci, dark, flat, coords, stamp_coords, ap, sky, stamp_rad, deg=1, ga
         if len(devices) == 0:
             print("Could not find OpenCL GPU or CPU device.")
 
+    print("Device max work group size:", devices[0].max_work_group_size)
+    print("Device max work item sizes:", devices[0].max_work_item_sizes)
+    #print("Device kernel work group size:", devices[0].max_kernel_work_group_size)
+
     ctx = cl.Context([devices[0]])
     queue = cl.CommandQueue(ctx)
     mf = cl.mem_flags
@@ -264,6 +268,7 @@ def GPUphot(sci, dark, flat, coords, stamp_coords, ap, sky, stamp_rad, deg=1, ga
     n_frames = len(sci[0])
     all_phot = []
     all_err = []
+
     for n in range(n_targets):  # For each target
         target = np.array(sci[n])
         c = stamp_coords[n]
@@ -274,60 +279,68 @@ def GPUphot(sci, dark, flat, coords, stamp_coords, ap, sky, stamp_rad, deg=1, ga
         dark_stamp = dark[(cxf-stamp_rad):(cxf+stamp_rad+1), (cyf-stamp_rad):(cyf+stamp_rad+1)]
         flat_stamp = flat[(cxf-stamp_rad):(cxf+stamp_rad+1), (cyf-stamp_rad):(cyf+stamp_rad+1)]
 
-        target_flat = []
-        for f in target:
-            s = f.shape
-            ss = s[0] * s[1]
-            ft = f.reshape(1, ss)
-            target_flat.append(ft[0])
-
-        target_f = np.array([item for sublist in target_flat for item in sublist])
-        #print len(target_flat), len(target_f)
-        #target_f = target_flat.reshape(1, len(target_flat))
-
         flattened_dark = dark_stamp.flatten()
         dark_f = flattened_dark.reshape(1, len(flattened_dark))
 
         flattened_flat = flat_stamp.flatten()
-        flat_f = flattened_flat.reshape(1, len(flattened_flat))
+        flat_f = flattened_flat.reshape(len(flattened_flat))
 
-        target_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=target_f)
-        dark_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=dark_f[0])
-        flat_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=flat_f[0])
-        res_buf = cl.Buffer(ctx, mf.WRITE_ONLY, np.zeros((1, len(target_flat)), dtype=np.float32).nbytes)
+        target_flat = []
+        this_phot = []
+        for f in target:
+            s = f.shape
+            ss = s[0] * s[1]
+            ft = f.reshape(1, ss)
+            #target_flat.append(ft[0])
 
-        f = open('photometry.cl', 'r')
-        defines = """
+            #print(len(ft[0]))
+
+            target_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=ft[0])
+            dark_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=dark_f[0])
+            flat_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=flat_f)
+            res_buf = cl.Buffer(ctx, mf.WRITE_ONLY, np.zeros((len(ft[0]), ), dtype=np.float32).nbytes)
+
+            f = open('photometry.cl', 'r')
+            defines = """
                     #define n %d
                     #define centerX %d
                     #define centerY %d
                     #define aperture %d
                     #define sky_inner %d
                     #define sky_outer %d
-                """ % (2*stamp_rad, cx, cy, ap, sky[0], sky[1])
-        programName = defines + "".join(f.readlines())
+                    """ % (2*stamp_rad, cx, cy, ap, sky[0], sky[1])
+            programName = defines + "".join(f.readlines())
 
-        program = cl.Program(ctx, programName).build()
-        program.photometry(queue, target_f.shape, None, target_buf, dark_buf, flat_buf, res_buf)  # sizeX, sizeY, sizeZ
+            program = cl.Program(ctx, programName).build()
+            #queue, global work group size, local work group size
+            program.photometry(queue, ft[0].shape, #np.zeros((2*stamp_rad, 2*stamp_rad, 1)).shape,
+                               None, #np.zeros((512)).shape,
+                               target_buf, dark_buf, flat_buf, res_buf,
+                               cl.LocalMemory(ft[0].nbytes))  # sizeX, sizeY, sizeZ
 
-        res = np.zeros((1, len(target_flat)), dtype=np.float32)
-        cl.enqueue_copy(queue, res, res_buf)
-        all_phot.append(res)
+            res = np.zeros((len(ft[0]), ), dtype=np.float32)
+            cl.enqueue_copy(queue, res, res_buf)
+            #print("res: " + str(res[0] - (res[2]/res[3])*res[1]) + " || stamp: " + str(ft[0][0]))
+            print("a_sum: " + str(res[0]) + " || a_cnt: " + str(res[1]) +
+                  " || ssum: " + str(res[2]) + " || scnt: " + str(res[3]) +
+                  " || " + str((res[2]/res[3])*res[1]))
+            res_val = res[0] - (res[2]/res[3])*res[1]
+            this_phot.append(res_val)
+
+        all_phot.append(this_phot)
         all_err.append(res)
 
-    print all_phot
     import TimeSeries as ts
     return ts.TimeSeries(all_phot, all_err, None)
 
 
-def photometry(sci, mbias, mdark, mflat, target_coords, aperture, stamp_rad, sky, gpu=False):
+def photometry(sci, mbias, mdark, mflat, target_coords, aperture, stamp_rad, sky, deg=1, gain=None, ron=None, gpu=False):
     sci_stamps, new_coords, stamp_coords, epoch, labels = get_stamps(sci, target_coords, stamp_rad)
-    print epoch
 
     if gpu:
-        ts = GPUphot(sci_stamps, mdark-mbias, mflat-mbias, new_coords, stamp_coords, aperture, sky, stamp_rad)
+        ts = GPUphot(sci_stamps, mdark-mbias, mflat-mbias, new_coords, stamp_coords, aperture, sky, stamp_rad, gain, ron)
     else:
-        ts = CPUphot(sci_stamps, mdark-mbias, mflat-mbias, new_coords, stamp_coords, aperture, sky, stamp_rad)
+        ts = CPUphot(sci_stamps, mdark-mbias, mflat-mbias, new_coords, stamp_coords, aperture, sky, stamp_rad, deg, gain, ron)
 
     ts.set_epoch(epoch)
     labels[1] = 'REF1'
@@ -343,11 +356,18 @@ dark = np.zeros(io.readdata()[0].shape)
 bias = np.zeros(io.readdata()[0].shape)
 flat = np.ones(io.readdata()[0].shape)
 
-res = photometry(io, bias, dark, flat, [[577, 185], [488, 739]], 8, 50, [10, 15])#, gpu=True)
+res_gpu = photometry(io, bias, dark, flat, [[577, 185], [488, 739]], 8, 50, [16, 20], gpu=True)
+res_cpu = photometry(io, bias, dark, flat, [[577, 185], [488, 739]], 8, 50, [16, 20])
 #print(len(res[0]), res[0][0].shape)
-#print res[1]
+print res_cpu.channels
+print res_gpu.channels
 
-res.plot()
+#print res.errors
+#res.plot()
+
+#from dataproc.timeseries import astrointerface
+#interface = astrointerface.AstroInterface(io.readdata()[0])
+#interface.execute()
 
 
 """for i in range(1, l + 1):
