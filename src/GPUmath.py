@@ -49,8 +49,8 @@ def _check_combine_input(function):
     return input_checker
 
 
-@_check_array
-@_check_combine_input
+#@_check_array
+#@_check_combine_input
 def mean_combine(imgs, sigmaclip=False):
     """ Combines an array of images, using mean. All images on the
         array must be the same size, otherwise an error is raised.
@@ -65,8 +65,8 @@ def mean_combine(imgs, sigmaclip=False):
         return mean_comb
 
 
-@_check_array
-@_check_combine_input
+#@_check_array
+#@_check_combine_input
 def median_combine(imgs, sigmaclip=False):
     """ Combines an array of images, using median. All images on the
         array must be the same size, otherwise an error is raised.
@@ -81,8 +81,8 @@ def median_combine(imgs, sigmaclip=False):
     else:
         return median_comb
 
-@_check_array
-@_check_combine_input
+#@_check_array
+#@_check_combine_input
 def add_images(*args):
     """ Sums images on array.
     :param args: array of np.ndarrays

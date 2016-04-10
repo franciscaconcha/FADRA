@@ -59,7 +59,7 @@ def mean_combine(imgs, sigmaclip=False):
     :param args: array of np.ndarrays
     :return: np.ndarray
     """
-    print("LEN: " + str(len(imgs)))
+    #print("LEN: " + str(len(imgs)))
     if len(imgs) == 1:
         return imgs[0]
     else:
@@ -164,7 +164,8 @@ def shift_generator(a, k, m):
     else:
         bottom_right = sp.pad(a, (k, 0), 'edge')
 
-    return [top_shift, bottom_shift, right_shift, left_shift, top_left, top_right, bottom_left, bottom_right]
+    #return [top_shift, bottom_shift, right_shift, left_shift, top_left, top_right, bottom_left, bottom_right]
+    return [top_left, top_right, bottom_left, bottom_right]
 
 
 def median_filter(image, kernel_size):
