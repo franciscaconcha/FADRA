@@ -127,7 +127,7 @@ class TimeSeries(object):
 
             ax.errorbar(epoch,
                         self.flx[lab],
-                        #yerr=yerr,
+                        yerr=yerr,
                         marker="o",
                         label=lab)
 
