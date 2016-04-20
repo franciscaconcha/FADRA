@@ -1,11 +1,61 @@
-__author__ = 'fran'
 
+
+from __future__ import print_function
 import CPUmath
 import pyfits as pf
 import warnings
 from functools import wraps as _wraps
 import numpy as np
 from dataproc.core import io_file, io_dir
+import time
+
+from sys import getsizeof, stderr
+from itertools import chain
+from collections import deque
+try:
+    from reprlib import repr
+except ImportError:
+    pass
+
+def total_size(o, handlers={}, verbose=False):
+    """ Returns the approximate memory footprint an object and all of its contents.
+
+    Automatically finds the contents of the following builtin containers and
+    their subclasses:  tuple, list, deque, dict, set and frozenset.
+    To search other containers, add handlers to iterate over their contents:
+
+        handlers = {SomeContainerClass: iter,
+                    OtherContainerClass: OtherContainerClass.get_elements}
+
+    """
+    dict_handler = lambda d: chain.from_iterable(d.items())
+    all_handlers = {tuple: iter,
+                    list: iter,
+                    deque: iter,
+                    dict: dict_handler,
+                    set: iter,
+                    frozenset: iter,
+                   }
+    all_handlers.update(handlers)     # user handlers take precedence
+    seen = set()                      # track which object id's have already been seen
+    default_size = getsizeof(0)       # estimate sizeof object without __sizeof__
+
+    def sizeof(o):
+        if id(o) in seen:       # do not double count the same object
+            return 0
+        seen.add(id(o))
+        s = getsizeof(o, default_size)
+
+        if verbose:
+            print(s, type(o), repr(o), file=stderr)
+
+        for typ, handler in all_handlers.items():
+            if isinstance(o, typ):
+                s += sum(map(sizeof, handler(o)))
+                break
+        return s
+
+    return sizeof(o)
 
 
 def _check_combine_input(function):
@@ -164,7 +214,7 @@ def CPUreduce(raw, sci_path, bias=None, dark=None, flat=None,
     :return: AstroDir of reduced science images and corresponding master files attached.
     """
     #import dataproc as dp
-    print(len(bias), len(dark), len(flat))
+    #print(len(bias), len(dark), len(flat))
 
     if bias is not None:
         # This is done here for now, otherwise decorator on get_masterX has to be fixed
@@ -202,18 +252,20 @@ def CPUreduce(raw, sci_path, bias=None, dark=None, flat=None,
     i = 0
     res = []
 
+    t0 = time.clock()
     for r in raw_data:
         s = (r - mb - (md - mb)) / (mf - mb)
         res.append(s)
         # TODO check what happens with the header
         #s_header = r.readheader()  # Reduced data header is same as raw header for now
-        hdu = pf.PrimaryHDU(s)
-        filename = sci_path + "/CPU_reduced_" + "%03i.fits" % i
-        hdu.writeto(filename)
+        #hdu = pf.PrimaryHDU(s)
+        #filename = sci_path + "/CPU_reduced_" + "%03i.fits" % i
+        #hdu.writeto(filename)
         i += 1
 
+    t1 = time.clock() - t0
     #return io_dir.AstroDir(sci_path, mb, mf, md)
-    return res
+    return res, t1
 
 
 def GPUreduce(raw, sci_path, bias=None, dark=None, flat=None,
@@ -238,6 +290,9 @@ def GPUreduce(raw, sci_path, bias=None, dark=None, flat=None,
     ctx = cl.Context([devices[0]])
     queue = cl.CommandQueue(ctx)
     mf = cl.mem_flags
+
+    device_mem = devices[0].global_mem_size
+    print("Device memory: ", device_mem//1024//1024, 'MB')
 
     warnings.warn('Using combine function: %s' % (combine_mode))
 
@@ -272,23 +327,28 @@ def GPUreduce(raw, sci_path, bias=None, dark=None, flat=None,
         m_f = raw.flat
 
     raw_data = raw.readdata()
-    print raw_data.__class__
+
+    import sys
 
     img = np.array([])
     ss = 0
+    t0 = time.clock()
+
+
     for fi in raw_data:
+        #print fi.shape
         fi = fi - mb
         sh = fi.shape
         ss = sh[0] * sh[1]
         data = fi.reshape(1, ss)
         ndata = data[0]
         img = np.append(img, ndata)
+        print("New data size:", total_size(ndata), 'MB')
 
-    print mb.shape, md.shape, m_f.shape
+    #print mb.shape, md.shape, m_f.shape, mb.shape[0]*mb.shape[1], ss
     mb = mb.reshape(1, ss)
     md = md.reshape(1, ss)
     m_f = m_f.reshape(1, ss)
-    print mb.shape, md.shape, m_f.shape
 
     # GPU reduction
     img_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=img)
@@ -296,7 +356,7 @@ def GPUreduce(raw, sci_path, bias=None, dark=None, flat=None,
     flat_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=m_f - mb)
     res_buf = cl.Buffer(ctx, mf.WRITE_ONLY, img.nbytes)
 
-    f = open('reduce.cl', 'r')
+    f = open('/media/Fran/fractal/src/reduce.cl', 'r') #TODO Ojo con este path!!!
     programName = "".join(f.readlines())
 
     program = cl.Program(ctx, programName).build()
@@ -305,19 +365,31 @@ def GPUreduce(raw, sci_path, bias=None, dark=None, flat=None,
     res = np.empty_like(img)
     cl.enqueue_copy(queue, res, res_buf)
     n = len(raw)
-    size = raw[0].shape[0]
-    res2 = np.reshape(res, (n, size, size))
+    size = [raw[0].shape[0], raw[0].shape[1]]
+    res2 = np.reshape(res, (n, size[0], size[1]))
 
-    mb = mb.reshape(size, size)
-    md = md.reshape(size, size)
-    m_f = m_f.reshape(size, size)
+    t1 = time.clock() - t0
+
+    mb = mb.reshape(size[0], size[1])
+    md = md.reshape(size[0], size[1])
+    m_f = m_f.reshape(size[0], size[1])
 
     i = 0
-    for s in res2:
-        hdu = pf.PrimaryHDU(s)
-        filename = sci_path + "/GPU_reduced_" + "%03i.fits" % i
-        hdu.writeto(filename)
-        i += 1
+
+    #for s in res2:
+    #    hdu = pf.PrimaryHDU(s)
+    #    filename = sci_path + "/GPU_reduced_" + "%03i.fits" % i
+    #    hdu.writeto(filename)
+    #    i += 1
 
     #return io_dir.AstroDir(sci_path, mb, m_f, md)
-    return res2
+    return res2, t1
+
+def reduce(raw, sci_path, bias=None, dark=None, flat=None,
+              combine_mode=CPUmath.mean_combine, exp_time=None, save_masters=False, gpu=False):
+    if gpu:
+        res, t = GPUreduce(raw, sci_path, bias, dark, flat, combine_mode, exp_time, save_masters)
+    else:
+        res, t = CPUreduce(raw, sci_path, bias, dark, flat, combine_mode, exp_time, save_masters)
+    return res, t
+

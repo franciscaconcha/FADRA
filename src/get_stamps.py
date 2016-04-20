@@ -369,7 +369,8 @@ def photometry(sci, mbias, mdark, mflat, target_coords, aperture, stamp_rad, sky
     return ts, tt
 
 
-io = dp.AstroDir("/media/Fran/2011_rem/rawsci/rawimgs")
+#io = dp.AstroDir("/media/Fran/2011_rem/rawsci70/raw6")
+io = dp.AstroDir("/media/Fran/2013-03-31/sci500/")
 # OJO coordenadas van Y,X
 #res = get_stamps(io, None, None, None, [[577, 185], [488, 739]], 20)
 import numpy as np
@@ -387,6 +388,23 @@ sky = [sky_i, sky_o]
 gain = 2.0
 ron = 14
 
+import pyopencl as cl
+import os
+os.environ['PYOPENCL_COMPILER_OUTPUT'] = '1'
+platforms = cl.get_platforms()
+if len(platforms) == 0:
+    print("Failed to find any OpenCL platforms.")
+
+devices = platforms[0].get_devices(cl.device_type.GPU)
+if len(devices) == 0:
+    print("Could not find GPU device, trying CPU...")
+    devices = platforms[0].get_devices(cl.device_type.CPU)
+    if len(devices) == 0:
+        print("Could not find OpenCL GPU or CPU device.")
+
+print("Device memory: ", devices[0].global_mem_size//1024//1024, 'MB')
+
+
 import time
 gpu_time_0 = time.clock()
 res_gpu, gpu_time = photometry(io, bias, dark, flat, target_coords, aperture, stamp_rad, sky, gain=gain, ron=ron, gpu=True)
@@ -398,21 +416,22 @@ res_cpu, cpu_time = photometry(io, bias, dark, flat, target_coords, aperture, st
 
 print("CPU: %.2f s || GPU: %.2f s" % (cpu_time, gpu_time))
 
-#res_cpu.plot()
+res_cpu.plot()
 #res_gpu.plot()
 
 #print res_cpu.errors[0]
 
-import matplotlib.pyplot as plt
+"""import matplotlib.pyplot as plt
 import dataproc as dp
 fig, ax, cpu_epoch = dp.axesfig_xdate(None, res_cpu.epoch)
 ax.errorbar(cpu_epoch, res_cpu[0], marker='o', label='CPU')
 ax.errorbar(cpu_epoch, res_gpu[0], marker='o', label='GPU')
-plt.show()
+plt.show()"""
 
-#from dataproc.timeseries import astrointerface
-#interface = astrointerface.AstroInterface(io.readdata()[0])
-#interface.execute()
+"""from dataproc.timeseries import astrointerface
+print io.readdata().shape
+interface = astrointerface.AstroInterface(io.readdata()[0])
+interface.execute()"""
 
 """sci_stamps, new_coords, stamp_coords, epoch, labels = get_stamps(io, target_coords, stamp_rad)
 l = len(sci_stamps[0])
