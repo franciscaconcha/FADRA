@@ -128,17 +128,25 @@ def get_stamps(sci, target_coords, stamp_rad):
     :param stamp_rad:
     :return:
     """
+
+    data = sci.files
+
     all_cubes = []
-    data = sci.readdata()
+    #data = sci.readdata()
     epoch = sci.getheaderval('MJD-OBS')
     labels = sci.getheaderval('OBJECT')
     new_coords = []
     stamp_coords =[]
 
+    import pyfits as pf
+
     for tc in target_coords:
         cube, new_c, st_c = [], [], []
         cx, cy = tc[0], tc[1]
-        for d in data:
+        for df in data:
+            dlist = pf.open(df.filename)
+            d = dlist[0].data
+            #d = df.reader({'rawdata': True})
             stamp = d[cx - stamp_rad:cx + stamp_rad + 1, cy - stamp_rad:cy + stamp_rad +1]
             cx_s, cy_s = centroid(stamp)
             cx = cx - stamp_rad + cx_s.round()
@@ -147,6 +155,7 @@ def get_stamps(sci, target_coords, stamp_rad):
             cube.append(stamp)
             st_c.append([cx_s.round(), cy_s.round()])
             new_c.append([cx, cy])
+            dlist.close()
         all_cubes.append(cube)
         new_coords.append(new_c)
         stamp_coords.append(st_c)
@@ -292,6 +301,7 @@ def GPUphot(sci, dark, flat, coords, stamp_coords, ap, sky, stamp_rad, deg=1, ga
                     elif dist > sky[0] and dist < sky[1]:
                         phoot[2] += f[i, j]
                         phoot[3] += 1
+            res_val = (phoot[0] - (phoot[2]/phoot[3])*phoot[1])
             this_phot.append(phoot[0] - (phoot[2]/phoot[3])*phoot[1])"""
 
             s = f.shape
@@ -344,6 +354,7 @@ def GPUphot(sci, dark, flat, coords, stamp_coords, ap, sky, stamp_rad, deg=1, ga
                 d = centraldistances(f, [cx, cy])
                 sky_std = f[(d > sky[0]) & (d < sky[1])].std()
                 error = phot_error(res_val, sky_std, res[1], res[3], gain, ron=ron)
+                #error = phot_error(res_val, sky_std, phoot[1], phoot[3], gain, ron=ron)
             this_error.append(error)
 
         all_phot.append(this_phot)
@@ -358,6 +369,8 @@ def GPUphot(sci, dark, flat, coords, stamp_coords, ap, sky, stamp_rad, deg=1, ga
 def photometry(sci, mbias, mdark, mflat, target_coords, aperture, stamp_rad, sky, deg=1, gain=None, ron=None, gpu=False):
     sci_stamps, new_coords, stamp_coords, epoch, labels = get_stamps(sci, target_coords, stamp_rad)
 
+    print("Stamps done")
+
     if gpu:
         ts, tt = GPUphot(sci_stamps, mdark-mbias, mflat-mbias, new_coords, stamp_coords, aperture, sky, stamp_rad, deg, gain, ron)
     else:
@@ -369,17 +382,22 @@ def photometry(sci, mbias, mdark, mflat, target_coords, aperture, stamp_rad, sky
     return ts, tt
 
 
-#io = dp.AstroDir("/media/Fran/2011_rem/rawsci70/raw6")
-io = dp.AstroDir("/media/Fran/2013-03-31/sci500/")
+io = dp.AstroDir("/media/Fran/2011_rem/rawsci70")
+#io = dp.AstroDir("/media/Fran/data/dk154/d1/sci/WASP26")
 # OJO coordenadas van Y,X
 #res = get_stamps(io, None, None, None, [[577, 185], [488, 739]], 20)
 import numpy as np
-dark = np.zeros(io.readdata()[0].shape)
-bias = np.zeros(io.readdata()[0].shape)
-flat = np.ones(io.readdata()[0].shape)
+dark = np.zeros((2048,2048))
+bias = np.zeros((2048,2048))
+flat = np.ones((2048,2048))
 
-    # estas coordenadas ya vienen en formato y, x
+#dark = dp.AstroFile("/media/Fran/data/dk154/d1/bias/bias1x1_000003.fits")
+#bias = dp.AstroFile("/media/Fran/data/dk154/d1/bias/bias1x1_000003.fits")
+#flat = dp.AstroFile("/media/Fran/data/dk154/d1/flat/masterflat-R.fit")
+
+# estas coordenadas ya vienen en formato y, x
 target_coords = [[577, 185], [485, 735]]
+#target_coords =[[1077, 1022], [412, 1505]]
 aperture = 8
 stamp_rad = 20
 sky_i = 16
@@ -388,7 +406,7 @@ sky = [sky_i, sky_o]
 gain = 2.0
 ron = 14
 
-import pyopencl as cl
+"""import pyopencl as cl
 import os
 os.environ['PYOPENCL_COMPILER_OUTPUT'] = '1'
 platforms = cl.get_platforms()
@@ -402,7 +420,7 @@ if len(devices) == 0:
     if len(devices) == 0:
         print("Could not find OpenCL GPU or CPU device.")
 
-print("Device memory: ", devices[0].global_mem_size//1024//1024, 'MB')
+print("Device memory: ", devices[0].global_mem_size//1024//1024, 'MB')"""
 
 
 import time
@@ -417,9 +435,22 @@ res_cpu, cpu_time = photometry(io, bias, dark, flat, target_coords, aperture, st
 print("CPU: %.2f s || GPU: %.2f s" % (cpu_time, gpu_time))
 
 res_cpu.plot()
-#res_gpu.plot()
+res_gpu.plot()
 
-#print res_cpu.errors[0]
+print res_cpu[0]
+print res_gpu[0]
+
+from sklearn.metrics import mean_squared_error
+from math import sqrt
+
+rc = [int(i) for i in res_cpu[0]]
+
+rms = np.array(sqrt(mean_squared_error(rc, res_gpu[0])))
+print rms
+
+print np.array(rc) - np.array(res_gpu[0])
+
+print max(np.array(rc) - np.array(res_gpu[0]))/max(np.array(res_cpu[0]))
 
 """import matplotlib.pyplot as plt
 import dataproc as dp
