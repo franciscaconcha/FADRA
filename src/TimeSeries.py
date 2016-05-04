@@ -111,7 +111,13 @@ class TimeSeries(object):
         :rtype: None (and plot display)
         """
         import dataproc as dp
-        fig, ax, epoch = dp.axesfig_xdate(axes, self.epoch)
+        from datetime import datetime
+        from matplotlib import dates
+
+        date_epoch = [datetime.strptime(e, "%Y-%m-%dT%H:%M:%S.%f") for e in self.epoch]
+        newepoch = [dates.date2num(dts) for dts in date_epoch]
+
+        fig, ax, epoch = dp.axesfig_xdate(axes, newepoch)
 
         if label is None:
             disp = self.flx.keys()

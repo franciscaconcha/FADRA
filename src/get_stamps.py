@@ -1,6 +1,8 @@
 import dataproc as dp
 import copy
 import scipy as sp
+import time
+import numpy as np
 
 def zscale(img,  trim = 0.05, contr=1, mask=None):
     """Returns lower and upper limits found by zscale algorithm for improved contrast in astronomical images.
@@ -133,7 +135,7 @@ def get_stamps(sci, target_coords, stamp_rad):
 
     all_cubes = []
     #data = sci.readdata()
-    epoch = sci.getheaderval('MJD-OBS')
+    epoch = sci.getheaderval('DATE-OBS')
     labels = sci.getheaderval('OBJECT')
     new_coords = []
     stamp_coords =[]
@@ -313,7 +315,7 @@ def GPUphot(sci, dark, flat, coords, stamp_coords, ap, sky, stamp_rad, deg=1, ga
             flat_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=flat_f)#np.array(flat_stamp))
             res_buf = cl.Buffer(ctx, mf.WRITE_ONLY, np.zeros((4, ), dtype=np.int32).nbytes)
 
-            f_cl = open('photometry.cl', 'r')
+            f_cl = open('/media/Fran/fractal/src/photometry.cl', 'r') #TODO ojo con este path
             defines = """
                     #define n %d
                     #define centerX %d
@@ -382,46 +384,29 @@ def photometry(sci, mbias, mdark, mflat, target_coords, aperture, stamp_rad, sky
     return ts, tt
 
 
-io = dp.AstroDir("/media/Fran/2011_rem/rawsci70")
+"""io = dp.AstroDir("/media/Fran/data/sara/20131214/sci")
 #io = dp.AstroDir("/media/Fran/data/dk154/d1/sci/WASP26")
 # OJO coordenadas van Y,X
 #res = get_stamps(io, None, None, None, [[577, 185], [488, 739]], 20)
 import numpy as np
-dark = np.zeros((2048,2048))
-bias = np.zeros((2048,2048))
-flat = np.ones((2048,2048))
+#dark = np.zeros((2048,2048))
+#bias = np.zeros((2048,2048))
+#flat = np.ones((2048,2048))
 
-#dark = dp.AstroFile("/media/Fran/data/dk154/d1/bias/bias1x1_000003.fits")
-#bias = dp.AstroFile("/media/Fran/data/dk154/d1/bias/bias1x1_000003.fits")
-#flat = dp.AstroFile("/media/Fran/data/dk154/d1/flat/masterflat-R.fit")
+dark = dp.AstroFile("/media/Fran/data/sara/20131214/dark/Dark30s-000.fits")
+bias = dp.AstroFile("/media/Fran/data/sara/20131214/bias/Bias-011.fits")
+flat = dp.AstroFile("/media/Fran/data/sara/20131214/flat/Flat5-001.fits")
 
 # estas coordenadas ya vienen en formato y, x
-target_coords = [[577, 185], [485, 735]]
+target_coords = [[520, 365], [434, 625], [536, 563]]
 #target_coords =[[1077, 1022], [412, 1505]]
-aperture = 8
-stamp_rad = 20
-sky_i = 16
-sky_o = 19
+aperture = 20
+stamp_rad = 50
+sky_i = 25
+sky_o = 30
 sky = [sky_i, sky_o]
 gain = 2.0
-ron = 14
-
-"""import pyopencl as cl
-import os
-os.environ['PYOPENCL_COMPILER_OUTPUT'] = '1'
-platforms = cl.get_platforms()
-if len(platforms) == 0:
-    print("Failed to find any OpenCL platforms.")
-
-devices = platforms[0].get_devices(cl.device_type.GPU)
-if len(devices) == 0:
-    print("Could not find GPU device, trying CPU...")
-    devices = platforms[0].get_devices(cl.device_type.CPU)
-    if len(devices) == 0:
-        print("Could not find OpenCL GPU or CPU device.")
-
-print("Device memory: ", devices[0].global_mem_size//1024//1024, 'MB')"""
-
+ron = 14.0
 
 import time
 gpu_time_0 = time.clock()
@@ -447,10 +432,11 @@ rc = [int(i) for i in res_cpu[0]]
 
 rms = np.array(sqrt(mean_squared_error(rc, res_gpu[0])))
 print rms
+print rms/(max(np.array(res_cpu[0])) - min(np.array(res_gpu[0])))
 
-print np.array(rc) - np.array(res_gpu[0])
+#print np.array(rc) - np.array(res_gpu[0])
 
-print max(np.array(rc) - np.array(res_gpu[0]))/max(np.array(res_cpu[0]))
+#print max(np.array(rc) - np.array(res_gpu[0]))/max(np.array(res_cpu[0]))"""
 
 """import matplotlib.pyplot as plt
 import dataproc as dp
