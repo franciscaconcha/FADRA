@@ -4,7 +4,10 @@ __kernel void photometry(__global float* stamp, __global float* dark,
                         __global float* flat, __global int* output)
                         //__local float* local_stamp)
 {
-    int x = get_global_id(0);
+    const int x = get_global_id(0);
+    const int y = get_global_id(1);
+
+    int i = y*SIZE + x;
 
     int s = n * n;
     int px = x / n;

@@ -49,14 +49,14 @@ def select_params(sci_data):
 
     f = Figure(figsize=(5, 4), dpi=100)
     a = f.add_subplot(111)
-    plot_data = dp.subarray(first_im, points[0], 50)
-    stamp_rad = 50
+    plot_data = dp.subarray(first_im, points[0], 20)
+    stamp_rad = 20
     p0 = stamp_rad
     p1 = stamp_rad
     p = [p0, p1]
-    circ_aperture = matplotlib.pyplot.Circle(p, 10, color='g', fill=False)
-    circ_sky_inner = matplotlib.pyplot.Circle(p, 15, color='r', fill=False)
-    circ_sky_outer = matplotlib.pyplot.Circle(p, 20, color='r', fill=False)
+    circ_aperture = matplotlib.pyplot.Circle(p, 5, color='g', fill=False)
+    circ_sky_inner = matplotlib.pyplot.Circle(p, 10, color='r', fill=False)
+    circ_sky_outer = matplotlib.pyplot.Circle(p, 15, color='r', fill=False)
     a.add_artist(circ_aperture)
     a.add_artist(circ_sky_inner)
     a.add_artist(circ_sky_outer)

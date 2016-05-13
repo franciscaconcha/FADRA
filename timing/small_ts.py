@@ -29,11 +29,11 @@ folders = [{"path": "sara/20110824/", "targets": [[484, 439], [923, 844]], "ap":
             "stamp": 50, "bias": "bias-000.fits", "dark": "dark200s-000.fits", "flat": "flats1s000.fits"}
            ]
 
-curr_time = time.strftime("%d-%m-%Y-%H-%M-%S")
-fp = open('./results/time_lightcurves/' + curr_time + '.txt', 'w+')
-fp.write("Dataset \t CPU \t GPU \t NRMSE \t NMAE\n")
-
 for f in folders:
+    curr_time = time.strftime("%d-%m-%Y-%H-%M-%S")
+    fp = open('./results/small_ts/' + f['path'][5:-1] + '-' + curr_time + '.txt', 'w+')
+    fp.write("Epoch \t CPU \t GPU\n")
+
     f_path = basepath + f['path']
     print(f_path)
     io = dp.AstroDir(f_path + 'sci10/')
@@ -42,31 +42,15 @@ for f in folders:
     flat = dp.AstroFile(f_path + 'flat/' + f['flat'])
     res_gpu, gpu_time = get_stamps.photometry(io, bias, dark, flat,
                                    f['targets'], f['ap'], f['stamp'], f['sky'],
-                                   gain=1.0, ron=5., gpu=True)
+                                   gain=1.0, ron=1.0, gpu=True)
     res_cpu, cpu_time = get_stamps.photometry(io, bias, dark, flat,
                                    f['targets'], f['ap'], f['stamp'], f['sky'],
-                                   gain=1.0, ron=5.)
+                                   gain=1.0, ron=1.0)
 
-    #from fractal.src import TimeSeries
-    #ts1 = TimeSeries.TimeSeries([res_cpu.channels[0], res_gpu.channels[0]], [res_cpu.errors[0], res_gpu.errors[0]],
-    #                    labels=['TARGET', 'REF1'], epoch=res_cpu.epoch)
-
-    #ts1.plot()
+    for i in range(len(res_cpu[0])):
+        fp.write("%s \t %d \t %d\n" % (res_cpu.epoch[i], res_cpu[0][i], res_gpu[0][i]))
 
     #res_cpu.plot()
     #res_gpu.plot()
-
-    print(np.array(res_gpu[0])/np.array(res_cpu[0]))
-
-    rc = [int(i) for i in res_cpu[0]]
-
-    rmse = np.array(sqrt(mean_squared_error(rc, res_gpu[0])))
-    nrmse = rmse/(max(np.array(res_gpu[0])) - min(np.array(res_gpu[0])))
-
-    mae = np.sum(np.absolute(np.array(rc) - np.array(res_gpu[0])))
-    nmae = mae/(max(np.array(res_gpu[0])) - min(np.array(res_gpu[0])))
-
-    fp.write("%s \t %.2f s \t %.2f s \t %.4f \t %.4f\n" % (f['path'], cpu_time, gpu_time, nrmse, nmae))
-    #print("%s || CPU: %.2f s || GPU: %.2f s || NRMSE: %.4f\n" % (f['path'], cpu_time, gpu_time, nrmse))
 
 fp.close()

@@ -1,6 +1,4 @@
-
-
-from __future__ import print_function
+from __future__ import print_function, division
 import CPUmath
 import pyfits as pf
 import warnings
@@ -219,9 +217,12 @@ def CPUreduce(raw, sci_path, bias=None, dark=None, flat=None,
     if bias is not None:
         # This is done here for now, otherwise decorator on get_masterX has to be fixed
         if isinstance(bias, io_dir.AstroDir):
-            print("Is AstroDir")
+            #print("Is AstroDir")
             bias_data = bias.readdata()
             mb = get_masterbias(bias_data, combine_mode, save_masters)
+        elif isinstance(bias, io_file.AstroFile):
+            #print("Is AstroFile")
+            mb = bias.reader()
         else:
             warnings.warn('Combining bias with function: %s' % (combine_mode))
             mb = get_masterbias(bias, combine_mode, save_masters)
@@ -231,6 +232,9 @@ def CPUreduce(raw, sci_path, bias=None, dark=None, flat=None,
         if isinstance(dark, io_dir.AstroDir):
             dark_data = dark.readdata()
             md = get_masterdark(dark_data, combine_mode, exp_time, save_masters)
+        elif isinstance(dark, io_file.AstroFile):
+            #print("Is AstroFile")
+            md = dark.reader()
         else:
             warnings.warn('Combining darks with function: %s' % (combine_mode))
             md = get_masterdark(dark, combine_mode, exp_time, save_masters)
@@ -240,6 +244,9 @@ def CPUreduce(raw, sci_path, bias=None, dark=None, flat=None,
         if isinstance(flat, io_dir.AstroDir):
             flat_data = flat.readdata()
             mf = get_masterflat(flat_data, combine_mode, save_masters)
+        elif isinstance(flat, io_file.AstroFile):
+            #print("Is AstroFile")
+            mf = flat.reader()
         else:
             warnings.warn('Combining flats with function: %s' % (combine_mode))
             mf = get_masterflat(flat, combine_mode, save_masters)
@@ -254,7 +261,15 @@ def CPUreduce(raw, sci_path, bias=None, dark=None, flat=None,
 
     t0 = time.clock()
     for r in raw_data:
-        s = (r - mb - (md - mb)) / (mf - mb)
+        #print(mb)
+        with np.errstate(divide='raise'):
+            try:
+                s = (r - md) / (mf - mb)
+                #print("ok")
+            except FloatingPointError:
+                s = (r - mb - (md - mb))
+        #print(s)
+        #print("*")
         res.append(s)
         # TODO check what happens with the header
         #s_header = r.readheader()  # Reduced data header is same as raw header for now
@@ -291,17 +306,20 @@ def GPUreduce(raw, sci_path, bias=None, dark=None, flat=None,
     queue = cl.CommandQueue(ctx)
     mf = cl.mem_flags
 
-    device_mem = devices[0].global_mem_size
-    print("Device memory: ", device_mem//1024//1024, 'MB')
+    #device_mem = devices[0].global_mem_size
+    #print("Device memory: ", device_mem//1024//1024, 'MB')
 
-    warnings.warn('Using combine function: %s' % (combine_mode))
+    #warnings.warn('Using combine function: %s' % (combine_mode))
 
     if bias is not None:
         # This is done here for now, otherwise decorator on get_masterX has to be fixed
         if isinstance(bias, io_dir.AstroDir):
-            print("Is AstroDir")
+            #print("Is AstroDir")
             bias_data = bias.readdata()
             mb = get_masterbias(bias_data, combine_mode, save_masters)
+        elif isinstance(bias, io_file.AstroFile):
+            #print("Is AstroFile")
+            mb = bias.reader()
         else:
             warnings.warn('Combining bias with function: %s' % (combine_mode))
             mb = get_masterbias(bias, combine_mode, save_masters)
@@ -311,6 +329,9 @@ def GPUreduce(raw, sci_path, bias=None, dark=None, flat=None,
         if isinstance(dark, io_dir.AstroDir):
             dark_data = dark.readdata()
             md = get_masterdark(dark_data, combine_mode, exp_time, save_masters)
+        elif isinstance(dark, io_file.AstroFile):
+            #print("Is AstroFile")
+            md = dark.reader()
         else:
             warnings.warn('Combining darks with function: %s' % (combine_mode))
             md = get_masterdark(dark, combine_mode, exp_time, save_masters)
@@ -320,6 +341,9 @@ def GPUreduce(raw, sci_path, bias=None, dark=None, flat=None,
         if isinstance(flat, io_dir.AstroDir):
             flat_data = flat.readdata()
             m_f = get_masterflat(flat_data, combine_mode, save_masters)
+        elif isinstance(flat, io_file.AstroFile):
+            #print("Is AstroFile")
+            m_f = flat.reader()
         else:
             warnings.warn('Combining flats with function: %s' % (combine_mode))
             m_f = get_masterflat(flat, combine_mode, save_masters)
@@ -332,49 +356,68 @@ def GPUreduce(raw, sci_path, bias=None, dark=None, flat=None,
 
     img = np.array([])
     ss = 0
-    t0 = time.clock()
 
+     #TODO Ojo con este path!!!
+    #programName = "".join(f.readlines())
+
+
+    res2 = []
+
+    t0 = time.clock()
 
     for fi in raw_data:
         #print fi.shape
-        fi = fi - mb
+        #fi = fi.flatten() - mb
         sh = fi.shape
         ss = sh[0] * sh[1]
         data = fi.reshape(1, ss)
         ndata = data[0]
-        img = np.append(img, ndata)
-        print("New data size:", total_size(ndata), 'MB')
+        #print(md.dtype)
+        #img = np.append(img, ndata)
+        #print("New data size:", total_size(ndata), 'MB')
 
-    #print mb.shape, md.shape, m_f.shape, mb.shape[0]*mb.shape[1], ss
-    mb = mb.reshape(1, ss)
-    md = md.reshape(1, ss)
-    m_f = m_f.reshape(1, ss)
+    #print(mb)#, md.shape, m_f.shape, mb.shape[0]*mb.shape[1], ss)
+        mb = mb.reshape(1, ss)
+        md = md.reshape(1, ss)
+        m_f = m_f.reshape(1, ss)
 
-    # GPU reduction
-    img_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=img)
-    dark_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=md - mb)
-    flat_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=m_f - mb)
-    res_buf = cl.Buffer(ctx, mf.WRITE_ONLY, img.nbytes)
+        #print(len(img))
+        img = data[0] - mb
 
-    f = open('/media/Fran/fractal/src/reduce.cl', 'r') #TODO Ojo con este path!!!
-    programName = "".join(f.readlines())
+        # GPU reduction
+        img_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=img)#fi - mb)
+        dark_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=md - mb)
+        flat_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=m_f - mb)
+        res_buf = cl.Buffer(ctx, mf.WRITE_ONLY, fi.nbytes)
 
-    program = cl.Program(ctx, programName).build()
-    program.reduce(queue, img.shape, None, dark_buf, flat_buf, img_buf, res_buf)  # sizeX, sizeY, sizeZ
+        #f = open('/media/Fran/fractal/test/add.cl', 'r')
+        f = open('/media/Fran/fractal/src/reduce.cl', 'r')
+        defines = """
+                    #define SIZE %d
+                    """ % (sh[0])#(len(fi))
+        programName = defines + "".join(f.readlines())
+        program = cl.Program(ctx, programName).build()
+        program.reduce(queue, img.shape, None, dark_buf, flat_buf, img_buf, res_buf)  # sizeX, sizeY, sizeZ
 
-    res = np.empty_like(img)
-    cl.enqueue_copy(queue, res, res_buf)
-    n = len(raw)
-    size = [raw[0].shape[0], raw[0].shape[1]]
-    res2 = np.reshape(res, (n, size[0], size[1]))
+        res = np.empty_like(ndata)#(fi)
+        cl.enqueue_copy(queue, res, res_buf)
+        #print(res.shape)
+        #print(sh)
+        res3 = res.reshape(sh)
+        res2.append(res3)
 
     t1 = time.clock() - t0
 
-    mb = mb.reshape(size[0], size[1])
-    md = md.reshape(size[0], size[1])
-    m_f = m_f.reshape(size[0], size[1])
+    #n = len(raw)
+    #size = [raw[0].shape[0], raw[0].shape[1]]
+    #res2 = np.reshape(res, (n, size[0], size[1]))
 
-    i = 0
+
+    #mb = mb.reshape(size[0], size[1])
+    #md = md.reshape(size[0], size[1])
+    #m_f = m_f.reshape(size[0], size[1])
+
+    #i = 0
 
     #for s in res2:
     #    hdu = pf.PrimaryHDU(s)

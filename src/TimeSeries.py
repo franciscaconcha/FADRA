@@ -6,16 +6,17 @@ import numpy as np
 
 class TimeSeries(object):
 
-    def __init__(self, data, errors, ids=None, epoch=None):
+    def __init__(self, data, errors, labels=None, epoch=None):
         self.channels = data  # [[target1_im1, target1_im2, ...], [target2_im1, target2_im2, ...]]
         self.errors = errors
         # [[error_target1_im1, error_target1_im2, ...], [error_target2_im1, error_target2_im2, ...]]
         self.group = [1] + [0 for i in range(len(data)-1)]
         # Default grouping: 1st coordinate is 1 group, all other objects are another group
-        if ids is not None:
-            self.flx = self.set_ids(ids)  # Dictionary for names?
-        else:
-            self.flx = {}
+        self.labels = {}
+        if labels is not None:
+            self.labels = self.set_labels(labels)  # Dictionary for names?
+        #else:
+        #    self.labels = {}
 
         self.channels.append([])  # Group 1 operation result; is overwritten every time a new op is defined
         self.errors.append([])
@@ -53,11 +54,11 @@ class TimeSeries(object):
     def errors_group2(self):
         return [self.errors[i] for i in range(len(self.errors) - 2) if not self.group[i]]
 
-    def set_ids(self, ids):
+    def set_labels(self, ids):
         self.ids = ids
         for i in range(len(self.ids)):
-            self.flx[self.ids[i]] = self.channels[i]
-        return self.flx
+            self.labels[self.ids[i]] = self.channels[i]
+        return self.labels
 
     def set_epoch(self, e):
         self.epoch = e
@@ -114,13 +115,14 @@ class TimeSeries(object):
         from datetime import datetime
         from matplotlib import dates
 
-        date_epoch = [datetime.strptime(e, "%Y-%m-%dT%H:%M:%S.%f") for e in self.epoch]
+        date_epoch = [datetime.strptime(e, "%Y-%m-%dT%H:%M:%S") for e in self.epoch]
         newepoch = [dates.date2num(dts) for dts in date_epoch]
+        #newepoch = self.epoch
 
         fig, ax, epoch = dp.axesfig_xdate(axes, newepoch)
 
         if label is None:
-            disp = self.flx.keys()
+            disp = self.labels.keys()
         else:
             disp = [label]
 
@@ -132,7 +134,7 @@ class TimeSeries(object):
                 yerr = self.__getitem__(lab, error=True)
 
             ax.errorbar(epoch,
-                        self.flx[lab],
+                        self.labels[lab],
                         yerr=yerr,
                         marker="o",
                         label=lab)

@@ -136,6 +136,7 @@ def get_stamps(sci, target_coords, stamp_rad):
     all_cubes = []
     #data = sci.readdata()
     epoch = sci.getheaderval('DATE-OBS')
+    #epoch = sci.getheaderval('MJD-OBS')
     labels = sci.getheaderval('OBJECT')
     new_coords = []
     stamp_coords =[]
@@ -298,10 +299,10 @@ def GPUphot(sci, dark, flat, coords, stamp_coords, ap, sky, stamp_rad, deg=1, ga
                 for j in range(f.shape[1]):
                     dist = np.sqrt((i-cx)**2 + (j-cy)**2)
                     if dist < ap:
-                        phoot[0] += f[i, j]
+                        phoot[0] += (f[i, j]-dark_stamp[i, j])/flat_stamp[i, j]
                         phoot[1] += 1
                     elif dist > sky[0] and dist < sky[1]:
-                        phoot[2] += f[i, j]
+                        phoot[2] += (f[i, j]-dark_stamp[i, j])/flat_stamp[i, j]
                         phoot[3] += 1
             res_val = (phoot[0] - (phoot[2]/phoot[3])*phoot[1])
             this_phot.append(phoot[0] - (phoot[2]/phoot[3])*phoot[1])"""
@@ -311,8 +312,8 @@ def GPUphot(sci, dark, flat, coords, stamp_coords, ap, sky, stamp_rad, deg=1, ga
             ft = f.reshape(1, ss)
 
             target_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=ft[0])
-            dark_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=dark_f)#np.array(dark_stamp))
-            flat_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=flat_f)#np.array(flat_stamp))
+            dark_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=dark_f)
+            flat_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=flat_f)
             res_buf = cl.Buffer(ctx, mf.WRITE_ONLY, np.zeros((4, ), dtype=np.int32).nbytes)
 
             f_cl = open('/media/Fran/fractal/src/photometry.cl', 'r') #TODO ojo con este path
@@ -323,7 +324,8 @@ def GPUphot(sci, dark, flat, coords, stamp_coords, ap, sky, stamp_rad, deg=1, ga
                     #define aperture %d
                     #define sky_inner %d
                     #define sky_outer %d
-                    """ % (2*stamp_rad+1, cx, cy, ap, sky[0], sky[1])
+                    #define SIZE %d
+                    """ % (2*stamp_rad+1, cx, cy, ap, sky[0], sky[1], f.shape[0])
             programName = defines + "".join(f_cl.readlines())
 
             program = cl.Program(ctx, programName).build()
@@ -335,18 +337,7 @@ def GPUphot(sci, dark, flat, coords, stamp_coords, ap, sky, stamp_rad, deg=1, ga
             res = np.zeros((4, ), dtype=np.int32)
             cl.enqueue_copy(queue, res, res_buf)
 
-            """sum, sumsky, px, pxsky = 0,0,0,0
-            for l in range(len(res)):
-                if res[l] == 1:
-                    sum += ft[0][l]
-                    px += 1
-                elif res[l] == 2:
-                    sumsky += ft[0][l]
-                    pxsky += 1
-
-            res_val = sum - (sumsky/pxsky)*px"""
-
-            res_val = res[0] - (res[2]/res[3])*res[1]
+            res_val = (res[0] - (res[2]/res[3])*res[1])/10000
             this_phot.append(res_val)
 
             #now the error
@@ -355,7 +346,7 @@ def GPUphot(sci, dark, flat, coords, stamp_coords, ap, sky, stamp_rad, deg=1, ga
             else:
                 d = centraldistances(f, [cx, cy])
                 sky_std = f[(d > sky[0]) & (d < sky[1])].std()
-                error = phot_error(res_val, sky_std, res[1], res[3], gain, ron=ron)
+                error = phot_error(res_val, sky_std, res[1], res[3], gain, ron=ron)/1000
                 #error = phot_error(res_val, sky_std, phoot[1], phoot[3], gain, ron=ron)
             this_error.append(error)
 
@@ -380,11 +371,11 @@ def photometry(sci, mbias, mdark, mflat, target_coords, aperture, stamp_rad, sky
 
     ts.set_epoch(epoch)
     labels[1] = 'REF1'
-    ts.set_ids(labels)
+    ts.set_labels(labels)
     return ts, tt
 
 
-"""io = dp.AstroDir("/media/Fran/data/sara/20131214/sci")
+"""io = dp.AstroDir("/media/Fran/data/sara/20131214/sci10")
 #io = dp.AstroDir("/media/Fran/data/dk154/d1/sci/WASP26")
 # OJO coordenadas van Y,X
 #res = get_stamps(io, None, None, None, [[577, 185], [488, 739]], 20)
@@ -420,12 +411,10 @@ res_cpu, cpu_time = photometry(io, bias, dark, flat, target_coords, aperture, st
 print("CPU: %.2f s || GPU: %.2f s" % (cpu_time, gpu_time))
 
 res_cpu.plot()
-res_gpu.plot()
+res_gpu.plot()"""
 
-print res_cpu[0]
-print res_gpu[0]
 
-from sklearn.metrics import mean_squared_error
+"""from sklearn.metrics import mean_squared_error
 from math import sqrt
 
 rc = [int(i) for i in res_cpu[0]]
