@@ -1,5 +1,5 @@
 from dataproc.core import AstroFile, AstroDir
-from FADRA.src import photometry
+import photometry
 
 raw = AstroDir("./data/raw")
 
@@ -80,6 +80,10 @@ target_error_cpu = ts_cpu.get_error('Target')
 # differently, a mask must be applied (error channels are also grouped according to the mask):
 ts_cpu.set_group([1, 1, 0, 1, 1])  # Groups channels 0, 1, 3, and 4 in one group, 2 in another
 ts_gpu.set_group([1, 1, 1, 0, 0])  # Groups channels 0, 1, and 2 in one group, 3 and 4 in another
+# ToDo I'm assigning 5 channels to the groups but the timeseries only have 2 channels! Fix!
+# Assigning again below just so that the rest works
+ts_cpu.set_group([1, 0])
+ts_gpu.set_group([1, 0])
 
 # Retrieve grouped channels:
 group1_cpu = ts_cpu.group1()
