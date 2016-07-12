@@ -1,12 +1,18 @@
+__author__ = 'Francisca Concha'
+
 import dataproc as dp
+from dataproc.timeseries import Photometry as dpPhotometry
 import copy
 import scipy as sp
 import numpy as np
 import timeseries
 import matplotlib.pyplot as plt
 
-class Photometry(object):
+class classAb(object):
+    pass
 
+class Photometry(dp.timeseries.astrocalc.AstroCalc):
+    #__metaclass__ = AstroCalc
     def __init__(self, sci, aperture=None, sky=None, mdark=None, mflat=None, calculate_stamps=True,
                    target_coords=None, stamp_rad=None, new_coords=None, stamp_coords=None,
                    epoch=None, labels=None, deg=1, gain=None, ron=None):
@@ -83,39 +89,6 @@ class Photometry(object):
         else:
             ts = self.CPUphot()
         return ts
-
-    def phot_error(self, phot, sky_std, n_pix_ap, n_pix_sky, gain, ron=None):
-        """Calculates the photometry error
-
-        :param phot: star flux
-        :type phot: float
-        :param sky: sky flux
-        :type sky: float
-        :param n_pix_ap: number of pixels in the aperture
-        :type n_pix_ap: int
-        :param n_pix_sky: number of pixels in the sky annulus
-        :type n_pix_sky: int
-        :param gain: gain
-        :type gain: float
-        :param ron: read-out-noise
-        :type ron: float (default value: None)
-        :rtype: float
-        """
-
-        if ron is None:
-            print("Photometric error calculated without RON")
-            ron = 0.0
-
-        if gain is None:
-            print("Photometric error calculated without Gain")
-            gain = 1.0
-
-        var_flux = phot/gain
-        var_sky = sky_std**2 * n_pix_ap * (1 + float(n_pix_ap) / n_pix_sky)
-
-        var_total = var_sky + var_flux + ron*ron*n_pix_ap
-
-        return sp.sqrt(var_total)
 
     def centroid(self, orig_arr, medsub=True):
         """Find centroid of small array
@@ -323,7 +296,7 @@ class Photometry(object):
                 flat_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=(flat_f/np.mean(flat_f)))
                 res_buf = cl.Buffer(ctx, mf.WRITE_ONLY, np.zeros((4, ), dtype=np.int32).nbytes)
 
-                f_cl = open('../photometry/photometry.cl', 'r')
+                f_cl = open('../kernels/photometry.cl', 'r')
                 defines = """
                     #define n %d
                     #define centerX %d
@@ -361,43 +334,6 @@ class Photometry(object):
 
         return timeseries.TimeSeries(all_phot, all_err, labels=self.labels, epoch=self.epoch)
 
-
-    def centraldistances(self, data, c):
-        """Computes distances for every matrix position from a central point c.
-        :param data: array
-        :type data: sp.ndarray
-        :param c: center coordinates
-        :type c: [float, float]
-        :rtype: sp.ndarray
-        """
-        dy, dx = data.shape
-        y, x = sp.mgrid[0:dy, 0:dx]
-        return sp.sqrt((y - c[0]) * (y - c[0]) + (x - c[1]) * (x - c[1]))
-
-
-    def bipol(self, coef, x, y):
-        """Polynomial fit for sky subtraction
-
-        :param coef: sky fit polynomial coefficients
-        :type coef: sp.ndarray
-        :param x: horizontal coordinates
-        :type x: sp.ndarray
-        :param y: vertical coordinates
-        :type y: sp.ndarray
-        :rtype: sp.ndarray
-        """
-        plane = sp.zeros(x.shape)
-        deg = sp.sqrt(coef.size).astype(int)
-        coef = coef.reshape((deg, deg))
-
-        if deg * deg != coef.size:
-            print("Malformed coefficient: " + str(coef.size) + "(size) != " + str(deg) + "(dim)^2")
-
-        for i in sp.arange(coef.shape[0]):
-            for j in sp.arange(i + 1):
-                plane += coef[i, j] * (x ** j) * (y ** (i - j))
-
-        return plane
 
     def plot_radialprofile(self, targets=None, xlim=None, axes=1,
                            legend_size=None,
