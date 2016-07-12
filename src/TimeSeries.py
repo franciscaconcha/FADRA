@@ -7,8 +7,14 @@ import numpy as np
 class TimeSeries(object):
 
     def __init__(self, data, errors, labels=None, epoch=None):
-        self.channels = data  # [[target1_im1, target1_im2, ...], [target2_im1, target2_im2, ...]]
-        self.errors = errors
+        dc = []
+        for d in data:
+            dc.append(sp.array(d))  # [[target1_im1, target1_im2, ...], [target2_im1, target2_im2, ...]]
+        self.channels = dc
+        de = []
+        for e in errors:
+            de.append(sp.array(e))
+        self.errors = de
         # [[error_target1_im1, error_target1_im2, ...], [error_target2_im1, error_target2_im2, ...]]
         self.group = [1] + [0 for i in range(len(data)-1)]
         # Default grouping: 1st coordinate is 1 group, all other objects are another group
@@ -115,7 +121,7 @@ class TimeSeries(object):
         from datetime import datetime
         from matplotlib import dates
 
-        date_epoch = [datetime.strptime(e, "%Y-%m-%dT%H:%M:%S") for e in self.epoch]
+        date_epoch = [datetime.strptime(e, "%Y-%m-%dT%H:%M:%S.%f") for e in self.epoch]
         newepoch = [dates.date2num(dts) for dts in date_epoch]
         #newepoch = self.epoch
 

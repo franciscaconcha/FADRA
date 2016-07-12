@@ -253,29 +253,31 @@ def CPUreduce(raw, sci_path, bias=None, dark=None, flat=None,
     else:
         mf = raw.flat
 
-    raw_data = raw.readdata()
+    raw_data = raw.files
 
-    import pyfits as pf
     i = 0
     res = []
 
     t0 = time.clock()
-    for r in raw_data:
-        #print(mb)
+    for dr in raw_data:
+        pr = pf.open(dr.filename)
+        r = pr[0].data
+        pr.close()
+        #r = dr.reader()
         with np.errstate(divide='raise'):
             try:
-                s = (r - md) / (mf - mb)
+                s = (r - md) / ((mf-mb)/np.mean(mf-mb))
                 #print("ok")
             except FloatingPointError:
-                s = (r - mb - (md - mb))
+                s = (r - mb)
         #print(s)
         #print("*")
         res.append(s)
         # TODO check what happens with the header
         #s_header = r.readheader()  # Reduced data header is same as raw header for now
-        #hdu = pf.PrimaryHDU(s)
-        #filename = sci_path + "/CPU_reduced_" + "%03i.fits" % i
-        #hdu.writeto(filename)
+        hdu = pf.PrimaryHDU(s)
+        filename = sci_path + "/CPU_4_reduced_" + "%03i.fits" % i
+        hdu.writeto(filename)
         i += 1
 
     t1 = time.clock() - t0
@@ -350,7 +352,7 @@ def GPUreduce(raw, sci_path, bias=None, dark=None, flat=None,
     else:
         m_f = raw.flat
 
-    raw_data = raw.readdata()
+    raw_data = raw.files
 
     import sys
 
@@ -364,8 +366,12 @@ def GPUreduce(raw, sci_path, bias=None, dark=None, flat=None,
     res2 = []
 
     t0 = time.clock()
+    i = 0
 
-    for fi in raw_data:
+    for fid in raw_data:
+        pr = pf.open(fid.filename)
+        fi = pr[0].data
+        pr.close()
         #print fi.shape
         #fi = fi.flatten() - mb
         sh = fi.shape
@@ -382,12 +388,12 @@ def GPUreduce(raw, sci_path, bias=None, dark=None, flat=None,
         m_f = m_f.reshape(1, ss)
 
         #print(len(img))
-        img = data[0] - mb
+        img = data[0] #- mb
 
         # GPU reduction
         img_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=img)#fi - mb)
-        dark_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=md - mb)
-        flat_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=m_f - mb)
+        dark_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=md)# - mb)
+        flat_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=(m_f - mb)/np.mean(m_f - mb))
         res_buf = cl.Buffer(ctx, mf.WRITE_ONLY, fi.nbytes)
 
         #f = open('/media/Fran/fractal/test/add.cl', 'r')
@@ -404,26 +410,13 @@ def GPUreduce(raw, sci_path, bias=None, dark=None, flat=None,
         #print(res.shape)
         #print(sh)
         res3 = res.reshape(sh)
+        hdu = pf.PrimaryHDU(res3)
+        filename = sci_path + "/GPU_7_reduced_" + "%03i.fits" % i
+        i += 1
+        hdu.writeto(filename)
         res2.append(res3)
 
     t1 = time.clock() - t0
-
-    #n = len(raw)
-    #size = [raw[0].shape[0], raw[0].shape[1]]
-    #res2 = np.reshape(res, (n, size[0], size[1]))
-
-
-    #mb = mb.reshape(size[0], size[1])
-    #md = md.reshape(size[0], size[1])
-    #m_f = m_f.reshape(size[0], size[1])
-
-    #i = 0
-
-    #for s in res2:
-    #    hdu = pf.PrimaryHDU(s)
-    #    filename = sci_path + "/GPU_reduced_" + "%03i.fits" % i
-    #    hdu.writeto(filename)
-    #    i += 1
 
     #return io_dir.AstroDir(sci_path, mb, m_f, md)
     return res2, t1

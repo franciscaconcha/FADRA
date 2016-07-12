@@ -9,7 +9,9 @@ __kernel void reduce(__constant float* dark, __constant float* flat,
     int y = (int)get_local_id(1);
     loc_im[y][x] = images[i*s + x];**/
 
+if (i < s){
    for(int j = 0; j < s; j++){
         res[i*s + j] = (images[i*s + j] - dark[j])/flat[j];
+    }
     }
 }

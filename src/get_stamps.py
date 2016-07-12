@@ -188,7 +188,7 @@ def CPUphot(sci, dark, flat, coords, stamp_coords, ap, sky, stamp_rad, deg=1, ga
             # Callibration stamps are obtained using coordinates from the "full" image
             dark_stamp = dark[(cxf-stamp_rad):(cxf+stamp_rad+1), (cyf-stamp_rad):(cyf+stamp_rad+1)]
             flat_stamp = flat[(cxf-stamp_rad):(cxf+stamp_rad+1), (cyf-stamp_rad):(cyf+stamp_rad+1)]
-            data = (target[t] - dark_stamp) / flat_stamp
+            data = (target[t] - dark_stamp) / (flat_stamp/np.mean(flat_stamp))
 
             # Photometry!
             d = centraldistances(data, cs)
@@ -313,7 +313,7 @@ def GPUphot(sci, dark, flat, coords, stamp_coords, ap, sky, stamp_rad, deg=1, ga
 
             target_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=ft[0])
             dark_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=dark_f)
-            flat_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=flat_f)
+            flat_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=(flat_f/np.mean(flat_f)))
             res_buf = cl.Buffer(ctx, mf.WRITE_ONLY, np.zeros((4, ), dtype=np.int32).nbytes)
 
             f_cl = open('/media/Fran/fractal/src/photometry.cl', 'r') #TODO ojo con este path
@@ -337,7 +337,7 @@ def GPUphot(sci, dark, flat, coords, stamp_coords, ap, sky, stamp_rad, deg=1, ga
             res = np.zeros((4, ), dtype=np.int32)
             cl.enqueue_copy(queue, res, res_buf)
 
-            res_val = (res[0] - (res[2]/res[3])*res[1])/10000
+            res_val = (res[0] - (res[2]/res[3])*res[1])
             this_phot.append(res_val)
 
             #now the error
@@ -359,8 +359,13 @@ def GPUphot(sci, dark, flat, coords, stamp_coords, ap, sky, stamp_rad, deg=1, ga
     return ts.TimeSeries(all_phot, all_err, None), t1
 
 
-def photometry(sci, mbias, mdark, mflat, target_coords, aperture, stamp_rad, sky, deg=1, gain=None, ron=None, gpu=False):
-    sci_stamps, new_coords, stamp_coords, epoch, labels = get_stamps(sci, target_coords, stamp_rad)
+def photometry(sci, mbias, mdark, mflat, aperture, sky, calculate_stamps=True,
+               target_coords=None, stamp_rad=None, new_coords=None, stamp_coords=None,
+               epoch=None, labels=None, deg=1, gain=None, ron=None, gpu=False):
+    if get_stamps:
+        sci_stamps, new_coords, stamp_coords, epoch, labels = get_stamps(sci, target_coords, stamp_rad)
+    else:
+        sci_stamps = sci
 
     print("Stamps done")
 
@@ -370,12 +375,37 @@ def photometry(sci, mbias, mdark, mflat, target_coords, aperture, stamp_rad, sky
         ts, tt = CPUphot(sci_stamps, mdark-mbias, mflat-mbias, new_coords, stamp_coords, aperture, sky, stamp_rad, deg, gain, ron)
 
     ts.set_epoch(epoch)
+    labels[0] = 'TARGET'
     labels[1] = 'REF1'
     ts.set_labels(labels)
-    return ts, tt
+    return ts, tt, new_coords
 
 
-"""io = dp.AstroDir("/media/Fran/data/sara/20131214/sci10")
+folders = [{"path": "sara/20140105/", "targets": [[498, 465], [417, 722]], "ap": 20, "sky": [25, 30],
+            "stamp": 50, "bias": "bias-000.fits", "dark": "dark200s-000.fits", "flat": "flats1s000.fits"},
+           #{"path": "sara/20131108/", "targets": [[1167, 920], [1291, 1210]], "ap": 10, "sky": [12, 15],
+           # "stamp": 20, "bias": "DarksNone001.fits", "dark": "DarksNone001.fits",
+           # "flat": "Flat10Bessell R001.fits"},
+           {"path": "sara/20131214/", "targets": [[520, 365], [434, 625]], "ap": 20, "sky": [25, 30],
+            "stamp": 50, "bias": "Bias-011.fits", "dark": "Dark30s-000.fits", "flat": "Flat5-001.fits"},
+           {"path": "sara/20131117/", "targets": [[741, 684], [520, 286]], "ap": 5, "sky": [7, 9],
+            "stamp": 15, "bias": "calib-20131118-None--bias-654.fits", "dark": "calib-20131118-None-604.fits",
+            "flat": "flats-20131117-Bessell R-001.fits"},
+           {"path": "sara/20130422/", "targets": [[677, 653], [462, 625]], "ap": 9, "sky": [12, 16],
+            "stamp": 20, "bias": "Dark-20110824-001.FITS", "dark": "Dark-20110824-001.FITS",
+            "flat": "flatI001.fits"},
+           {"path": "sara/20140118/", "targets": [[570, 269], [436, 539]], "ap": 12, "sky": [16, 20],
+            "stamp": 30, "bias": "bias-000.fits", "dark": "dark200s-000.fits", "flat": "flats1s004.fits"},
+           #{"path": "sara/20120430/", "targets": [[830, 680], [554, 1164]], "ap": 20, "sky": [25, 30],
+           # "stamp": 40, "bias": "bias-000.fits", "dark": "dark-000.fits", "flat": "flat-001.fits"},
+           {"path": "sara/20110824/", "targets": [[484, 439], [923, 844]], "ap": 10, "sky": [15, 20],
+            "stamp": 30, "bias": "Bias-20110824-001.FITS", "dark": "Dark-20110824-001.FITS",
+            "flat": "flatI001.fits"}
+           ]
+
+p = 0
+
+io = dp.AstroDir("/media/Fran/data/" + folders[p]['path'] + "sci")
 #io = dp.AstroDir("/media/Fran/data/dk154/d1/sci/WASP26")
 # OJO coordenadas van Y,X
 #res = get_stamps(io, None, None, None, [[577, 185], [488, 739]], 20)
@@ -384,9 +414,9 @@ import numpy as np
 #bias = np.zeros((2048,2048))
 #flat = np.ones((2048,2048))
 
-dark = dp.AstroFile("/media/Fran/data/sara/20131214/dark/Dark30s-000.fits")
-bias = dp.AstroFile("/media/Fran/data/sara/20131214/bias/Bias-011.fits")
-flat = dp.AstroFile("/media/Fran/data/sara/20131214/flat/Flat5-001.fits")
+dark = dp.AstroFile("/media/Fran/data/" + folders[p]['path'] + "/dark/" + folders[p]['dark'])
+bias = dp.AstroFile("/media/Fran/data/" + folders[p]['path'] + "/bias/" + folders[p]['bias'])
+flat = dp.AstroFile("/media/Fran/data/" + folders[p]['path'] + "/flat/" + folders[p]['flat'])
 
 # estas coordenadas ya vienen en formato y, x
 target_coords = [[520, 365], [434, 625], [536, 563]]
@@ -397,21 +427,21 @@ sky_i = 25
 sky_o = 30
 sky = [sky_i, sky_o]
 gain = 2.0
-ron = 14.0
+ron = 4.0
 
 import time
-gpu_time_0 = time.clock()
-res_gpu, gpu_time = photometry(io, bias, dark, flat, target_coords, aperture, stamp_rad, sky, gain=gain, ron=ron, gpu=True)
+#gpu_time_0 = time.clock()
+#res_gpu, gpu_time = photometry(io, bias, dark, flat, target_coords, aperture, stamp_rad, sky, gain=gain, ron=ron, gpu=True)
 #gpu_time = time.clock() - gpu_time_0
 
 cpu_time_0 = time.clock()
-res_cpu, cpu_time = photometry(io, bias, dark, flat, target_coords, aperture, stamp_rad, sky, gain=gain, ron=ron)
+res_cpu, cpu_time, np = photometry(io, bias, dark, flat, target_coords, aperture, stamp_rad, sky, gain=gain, ron=ron)
 #cpu_time = time.clock() - cpu_time_0
 
-print("CPU: %.2f s || GPU: %.2f s" % (cpu_time, gpu_time))
+#print("CPU: %.2f s || GPU: %.2f s" % (cpu_time, gpu_time))
 
 res_cpu.plot()
-res_gpu.plot()"""
+#res_gpu.plot()
 
 
 """from sklearn.metrics import mean_squared_error
