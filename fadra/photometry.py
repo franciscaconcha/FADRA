@@ -1,10 +1,8 @@
 import dataproc as dp
 import copy
 import scipy as sp
-import time
 import numpy as np
-import warnings
-import TimeSeries
+import timeseries
 import matplotlib.pyplot as plt
 
 class Photometry(object):
@@ -266,7 +264,7 @@ class Photometry(object):
             all_phot.append(t_phot)
             all_err.append(t_err)
 
-        return TimeSeries.TimeSeries(all_phot, all_err, labels=self.labels, epoch=self.epoch)
+        return timeseries.TimeSeries(all_phot, all_err, labels=self.labels, epoch=self.epoch)
 
 
     def GPUphot(self):
@@ -325,7 +323,7 @@ class Photometry(object):
                 flat_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=(flat_f/np.mean(flat_f)))
                 res_buf = cl.Buffer(ctx, mf.WRITE_ONLY, np.zeros((4, ), dtype=np.int32).nbytes)
 
-                f_cl = open('../src/photometry.cl', 'r')
+                f_cl = open('../photometry/photometry.cl', 'r')
                 defines = """
                     #define n %d
                     #define centerX %d
@@ -361,7 +359,7 @@ class Photometry(object):
             all_phot.append(this_phot)
             all_err.append(this_error)
 
-        return TimeSeries.TimeSeries(all_phot, all_err, labels=self.labels, epoch=self.epoch)
+        return timeseries.TimeSeries(all_phot, all_err, labels=self.labels, epoch=self.epoch)
 
 
     def centraldistances(self, data, c):
