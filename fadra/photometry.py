@@ -1,4 +1,7 @@
-__author__ = 'Francisca Concha'
+__author__ = "Francisca Concha"
+__license__ = "GPLv3"
+__email__ = "faconcha@dcc.uchile.cl"
+__status__ = "Development"
 
 import dataproc as dp
 from dataproc.timeseries.Photometry import TimeseriesExamine as dpPhot

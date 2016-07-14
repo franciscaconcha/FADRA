@@ -1,5 +1,7 @@
-__version__ = "$Revision$"
-__author__ = 'fran'
+__author__ = "Francisca Concha"
+__license__ = "GPLv3"
+__email__ = "faconcha@dcc.uchile.cl"
+__status__ = "Development"
 
 from functools import wraps as _wraps
 import scipy as sp

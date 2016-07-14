@@ -1,3 +1,8 @@
+__author__ = "Francisca Concha"
+__license__ = "GPLv3"
+__email__ = "faconcha@dcc.uchile.cl"
+__status__ = "Development"
+
 from __future__ import print_function, division
 import CPUmath
 import pyfits as pf

@@ -1,4 +1,7 @@
-__author__ = 'Francisca Concha'
+__author__ = "Francisca Concha"
+__license__ = "GPLv3"
+__email__ = "faconcha@dcc.uchile.cl"
+__status__ = "Development"
 
 import scipy as sp
 import warnings
