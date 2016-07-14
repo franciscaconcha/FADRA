@@ -1,0 +1,375 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>The photometry module &mdash; FADRA 1.0.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="FADRA 1.0.1 documentation" href="index.html"/>
+        <link rel="next" title="The timeseries module" href="timeseries.html"/>
+        <link rel="prev" title="The reduction module" href="reduction.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> FADRA
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="example.html">FADRA usage example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CPUmath.html">The CPUMath module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="reduction.html">The reduction module</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">The photometry module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-fadra.photometry">fadra.photometry module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="timeseries.html">The timeseries module</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">FADRA</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>The photometry module</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/photometry.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="the-photometry-module">
+<h1>The photometry module<a class="headerlink" href="#the-photometry-module" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-fadra.photometry">
+<span id="fadra-photometry-module"></span><h2>fadra.photometry module<a class="headerlink" href="#module-fadra.photometry" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="fadra.photometry.Photometry">
+<em class="property">class </em><code class="descclassname">fadra.photometry.</code><code class="descname">Photometry</code><span class="sig-paren">(</span><em>sci</em>, <em>aperture=None</em>, <em>sky=None</em>, <em>mdark=None</em>, <em>mflat=None</em>, <em>calculate_stamps=True</em>, <em>target_coords=None</em>, <em>stamp_rad=None</em>, <em>new_coords=None</em>, <em>stamp_coords=None</em>, <em>epoch=None</em>, <em>labels=None</em>, <em>deg=1</em>, <em>gain=None</em>, <em>ron=None</em><span class="sig-paren">)</span><a class="headerlink" href="#fadra.photometry.Photometry" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">dataproc.timeseries.Photometry.TimeseriesExamine</span></code></p>
+<dl class="method">
+<dt id="fadra.photometry.Photometry.CPUphot">
+<code class="descname">CPUphot</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#fadra.photometry.Photometry.CPUphot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs aperture photometry on the CPU.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">TimeSeries with the resulting photometry</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="timeseries.html#fadra.timeseries.TimeSeries" title="fadra.timeseries.TimeSeries">TimeSeries</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="fadra.photometry.Photometry.GPUphot">
+<code class="descname">GPUphot</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#fadra.photometry.Photometry.GPUphot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs aperture photometry on the GPU.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">TimeSeries with the resulting photometry</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="timeseries.html#fadra.timeseries.TimeSeries" title="fadra.timeseries.TimeSeries">TimeSeries</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="fadra.photometry.Photometry.centroid">
+<code class="descname">centroid</code><span class="sig-paren">(</span><em>orig_arr</em>, <em>medsub=True</em><span class="sig-paren">)</span><a class="headerlink" href="#fadra.photometry.Photometry.centroid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find centroid of small array</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>orig_arr</strong> (<em>SciPy array</em>) &#8211; array</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">coordinates of the centroid of orig_array</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">[float, float]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="fadra.photometry.Photometry.get_stamps">
+<code class="descname">get_stamps</code><span class="sig-paren">(</span><em>sci</em>, <em>target_coords</em>, <em>stamp_rad</em><span class="sig-paren">)</span><a class="headerlink" href="#fadra.photometry.Photometry.get_stamps" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get stamps from an AstroDir of astronomical images, to perform aperture photometry.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>sci</strong> (<em>AstroDir</em>) &#8211; Raw astronomical images</li>
+<li><strong>target_coords</strong> (<em>[[t1x, t1y], [t2x, t2y], ...]</em>) &#8211; Coordinates for all the stars over which photometry is to be performed, in coordinates of the first raw image</li>
+<li><strong>stamp_rad</strong> (<em>int</em>) &#8211; &#8220;Square radius&#8221; for the stamps. Each stamp will be of shape (2*stamp_rad, 2*stamp_rad)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">N data cubes of M stamps each. N is the number of targets, M the number of raw images.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Also: coordinates of the centroid of each stamp in image coordinates and in stamp coordinates, list of epochs for each image, and target labels.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="fadra.photometry.Photometry.photometry">
+<code class="descname">photometry</code><span class="sig-paren">(</span><em>aperture=None</em>, <em>sky=None</em>, <em>gpu=False</em><span class="sig-paren">)</span><a class="headerlink" href="#fadra.photometry.Photometry.photometry" title="Permalink to this definition">¶</a></dt>
+<dd><p>Peforms aperture photometry by calling the CPU or GPU photometry according to the given flag.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>aperture</strong> (<em>int</em>) &#8211; Aperture radius for photometry</li>
+<li><strong>sky</strong> (<em>[int, int] or polynomial fit for sky annulus</em>) &#8211; Inner and outer radii for sky annulus</li>
+<li><strong>gpu</strong> &#8211; gpu=False (default) runs CPU photometry. True runs GPU photometry.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">TimeSeries with the performed photometry</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="timeseries.html#fadra.timeseries.TimeSeries" title="fadra.timeseries.TimeSeries">TimeSeries</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="fadra.photometry.Photometry.plot_radialprofile">
+<code class="descname">plot_radialprofile</code><span class="sig-paren">(</span><em>targets=None</em>, <em>xlim=None</em>, <em>axes=1</em>, <em>legend_size=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#fadra.photometry.Photometry.plot_radialprofile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot Radial Profile from data using radialprofile() function</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>target</strong> (<em>integer, string or 2-element list</em>) &#8211; Target spoecification for recentering.
+Either an integer for specifc target, or a 2-element list for x/y coordinates.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="fadra.photometry.Photometry.radialprofile">
+<code class="descname">radialprofile</code><span class="sig-paren">(</span><em>target</em>, <em>stamprad=None</em>, <em>frame=0</em>, <em>recenter=False</em><span class="sig-paren">)</span><a class="headerlink" href="#fadra.photometry.Photometry.radialprofile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the x and y arrays for radial profile</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>target</strong> (<em>integer/string or 2-element list</em>) &#8211; Target spoecification for recentering. Either an integer for specifc target, or a 2-element list for x/y coordinates.</li>
+<li><strong>frame</strong> (<em>integer</em>) &#8211; which frame to show</li>
+<li><strong>recenter</strong> (<em>bool</em>) &#8211; whether to recenter</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(x-array, y-array, [x,y] center)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="fadra.photometry.Photometry.showstamp">
+<code class="descname">showstamp</code><span class="sig-paren">(</span><em>target=None</em>, <em>stamprad=30</em>, <em>first=0</em>, <em>last=-1</em>, <em>figure=None</em>, <em>ncol=None</em><span class="sig-paren">)</span><a class="headerlink" href="#fadra.photometry.Photometry.showstamp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Show the star at the same position for the different frames</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>target</strong> &#8211; None for the first key()</li>
+<li><strong>stamprad</strong> &#8211; Plotting radius</li>
+<li><strong>first</strong> &#8211; First frame to show</li>
+<li><strong>last</strong> &#8211; Last frame to show. It can be on Python negative format</li>
+<li><strong>figure</strong> &#8211; Specify figure number</li>
+<li><strong>ncol</strong> &#8211; Number of columns</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="timeseries.html" class="btn btn-neutral float-right" title="The timeseries module" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="reduction.html" class="btn btn-neutral" title="The reduction module" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Francisca Concha.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'1.0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

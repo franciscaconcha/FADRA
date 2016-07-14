@@ -35,7 +35,8 @@ class TimeSeries(object):
     # This is so I can do ts[0]/ts[2] and it works directly with the channels
     def __getitem__(self, item, error=False):
         """ Returns the corresponding TimeSeries channel, which corresponds to the photometry
-            result of the target given in item.
+        result of the target given in item.
+
         :param item: ID of the target. Can be number or label name.
         :param error: if True, returns the error channel instead of the photometry channel.
         :return: Photometry or error channel
@@ -54,6 +55,7 @@ class TimeSeries(object):
 
     def get_error(self, item):
         """ Retuns error channel for target given in item.
+
         :param item: ID of the target. Can be number or label name.
         :return: error associated to photometry of said target
         :rtype: SciPy array
@@ -62,19 +64,22 @@ class TimeSeries(object):
 
     def group1(self):
         """ Returns first grouping of photometry channels.
-        :return: list
+
+        :return: list of SciPy arrays
         """
         return [self.channels[i] for i in range(len(self.channels) - 2) if self.group[i]]
 
     def group2(self):
         """ Returns second grouping of photometry channels.
-        :return: list
+
+        :return: list of SciPy arrays
         """
         return [self.channels[i] for i in range(len(self.channels) - 2) if not self.group[i]]
 
     def set_group(self, new_group):
         """ Sets a grouping inside the TimeSeries object. Targets can be grouped or ungrouped together
-            as a way to easily perform operations between many of them.
+        as a way to easily perform operations between many of them.
+
         :param new_group: Mask of 0s and 1s. 1s are the first group. Ex: [0 1 0 0 1 0] defines the first
                             group to contain targets 2 and 5; second group contains targets 1, 3, 4 and 6.
         """
@@ -82,20 +87,24 @@ class TimeSeries(object):
 
     def errors_group1(self):
         """ Returns error channels of the first group.
-        :return: list
+
+        :return: list of SciPy arrays
         """
         return [self.errors[i] for i in range(len(self.errors) - 2) if self.group[i]]
 
     def errors_group2(self):
         """ Returns error channels of the second group.
-        :return: list
+
+        :return: list of SciPy arrays
         """
         return [self.errors[i] for i in range(len(self.errors) - 2) if not self.group[i]]
 
     def set_labels(self, ids):
         """ Sets name labels for each channel
-        :param ids: List of label names
-        :return: List of labels
+
+        :param ids: list of label names
+        :type ids: list of strings
+        :return: List of strings
         """
         self.ids = ids
         for i in range(len(self.ids)):
@@ -104,13 +113,15 @@ class TimeSeries(object):
 
     def set_epoch(self, e):
         """ Sets epoch for time serie
+
         :param e: epoch
         """
         self.epoch = e
 
     def mean(self, group_id):
         """ Calculates the mean of the channels stored in group group_id. Also calculated for error
-            channels. Result is stored in channel timeserie[-group_id]
+        channels. Result is stored in channel timeserie[-group_id]
+
         :param group_id: int. 1 or 2.
         """
         if group_id > 2:
@@ -134,7 +145,8 @@ class TimeSeries(object):
 
     def median(self, group_id):
         """ Calculates the median of the channels stored in group group_id. Also calculated for error
-            channels. Result is stored in channel timeserie[-group_id]
+        channels. Result is stored in channel timeserie[-group_id]
+
         :param group_id: int. 1 or 2.
         """
         if group_id > 2:
@@ -162,7 +174,6 @@ class TimeSeries(object):
 
         :param label: Specify a single star to plot
         :rtype label: basestring
-
         :rtype: None (and plot display)
         """
         import dataproc as dp

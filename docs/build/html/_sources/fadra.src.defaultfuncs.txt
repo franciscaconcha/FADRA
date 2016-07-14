@@ -1,0 +1,10 @@
+fadra.src.defaultfuncs package
+==============================
+
+Module contents
+---------------
+
+.. automodule:: fadra.src.defaultfuncs
+    :members:
+    :undoc-members:
+    :show-inheritance:

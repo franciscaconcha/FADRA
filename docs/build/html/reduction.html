@@ -1,0 +1,415 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>The reduction module &mdash; FADRA 1.0.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="FADRA 1.0.1 documentation" href="index.html"/>
+        <link rel="next" title="The photometry module" href="photometry.html"/>
+        <link rel="prev" title="The CPUMath module" href="CPUmath.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> FADRA
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="example.html">FADRA usage example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CPUmath.html">The CPUMath module</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">The reduction module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-fadra.reduction">fadra.reduction module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="photometry.html">The photometry module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="timeseries.html">The timeseries module</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">FADRA</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>The reduction module</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/reduction.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="the-reduction-module">
+<h1>The reduction module<a class="headerlink" href="#the-reduction-module" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-fadra.reduction">
+<span id="fadra-reduction-module"></span><h2>fadra.reduction module<a class="headerlink" href="#module-fadra.reduction" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="fadra.reduction.CPUreduce">
+<code class="descclassname">fadra.reduction.</code><code class="descname">CPUreduce</code><span class="sig-paren">(</span><em>raw</em>, <em>sci_path</em>, <em>dark=None</em>, <em>flat=None</em>, <em>combine_mode=&lt;function mean_combine&gt;</em>, <em>exp_time=None</em>, <em>save_masters=False</em><span class="sig-paren">)</span><a class="headerlink" href="#fadra.reduction.CPUreduce" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reduces image files on CPU. Master calibration fields should be attached to the raw AstroDir.
+If AstroDirs are given for dark or flat, they are combined to obtain masters.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>raw</strong> &#8211; AstroDir of raw files, with corresponding masters attached</li>
+<li><strong>sci_path</strong> &#8211; Path to save reduced files</li>
+<li><strong>dark</strong> &#8211; (optional) AstroDir of all dark files to be combined</li>
+<li><strong>flat</strong> &#8211; (optional) AstroDir of all flat files to be combined</li>
+<li><strong>combine_mode</strong> &#8211; (optional) function used to combine bias, darks, and flats. Default is CPUmath.mean_combine()</li>
+<li><strong>exp_time</strong> &#8211; (optional) desired exposure time. If a value is given, the dark AstroDir will be
+searched for the corresponding dark for said exposure time, and that dark will be
+used as MasterDark. If no dark is found for that exposure time, one will be
+interpolated. If no exp_time is given (not recommended!), all dark files in &#8216;dark&#8217;
+will simply be combined using combine_mode.</li>
+<li><strong>save_masters</strong> &#8211; option to save master files. Default is false. Saves in raw AstroDir path.</li>
+<li><strong>save_reduced</strong> &#8211; option to save reduced files. Default is false. Saves in sci AstroDir path.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">AstroDir of reduced science images and corresponding master files attached.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="fadra.reduction.GPUreduce">
+<code class="descclassname">fadra.reduction.</code><code class="descname">GPUreduce</code><span class="sig-paren">(</span><em>raw</em>, <em>sci_path</em>, <em>dark=None</em>, <em>flat=None</em>, <em>combine_mode=&lt;function mean_combine&gt;</em>, <em>exp_time=None</em>, <em>save_masters=False</em><span class="sig-paren">)</span><a class="headerlink" href="#fadra.reduction.GPUreduce" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reduces image files on GPU. Master calibration fields should be attached to the raw AstroDir.
+If AstroDirs are given for dark or flat, they are combined to obtain masters.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>raw</strong> &#8211; AstroDir of raw files, with corresponding masters attached</li>
+<li><strong>sci_path</strong> &#8211; Path to save reduced files</li>
+<li><strong>dark</strong> &#8211; (optional) AstroDir of all dark files to be combined</li>
+<li><strong>flat</strong> &#8211; (optional) AstroDir of all flat files to be combined</li>
+<li><strong>combine_mode</strong> &#8211; (optional) function used to combine bias, darks, and flats. Default is CPUmath.mean_combine()</li>
+<li><strong>exp_time</strong> &#8211; (optional) desired exposure time. If a value is given, the dark AstroDir will
+be searched for the corresponding dark for said exposure time, and that dark will be used as
+MasterDark. If no dark is found for that exposure time, one will be interpolated.
+If no exp_time is given (not recommended!), all dark files in &#8216;dark&#8217; will simply be combined
+using combine_mode.</li>
+<li><strong>save_masters</strong> &#8211; option to save master files. Default is false. Saves in raw AstroDir path.</li>
+<li><strong>save_reduced</strong> &#8211; option to save reduced files. Default is false. Saves in sci AstroDir path.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">AstroDir of reduced science images and corresponding master files attached.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="fadra.reduction.column">
+<code class="descclassname">fadra.reduction.</code><code class="descname">column</code><span class="sig-paren">(</span><em>array</em>, <em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="headerlink" href="#fadra.reduction.column" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns vertical column from stack of 2D arrays.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>array</strong> &#8211; Stack (list) of 2D arrays</li>
+<li><strong>x</strong> &#8211; x coordinate of desired column</li>
+<li><strong>y</strong> &#8211; y coordinate of desired column</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">list</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="fadra.reduction.get_masterbias">
+<code class="descclassname">fadra.reduction.</code><code class="descname">get_masterbias</code><span class="sig-paren">(</span><em>instance</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#fadra.reduction.get_masterbias" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns MasterBias, combining all bias files using the given function.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>bias</strong> &#8211; AstroDir with all bias files</li>
+<li><strong>combine_mode</strong> &#8211; function used to combine bias. Default is CPUmath.mean_combine()</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">AstroFile</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="fadra.reduction.get_masterdark">
+<code class="descclassname">fadra.reduction.</code><code class="descname">get_masterdark</code><span class="sig-paren">(</span><em>instance</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#fadra.reduction.get_masterdark" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns MasterDark, combining all dark files using the given function.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>flats</strong> &#8211; np.ndarray with all dark arrays</li>
+<li><strong>combine_mode</strong> &#8211; function used to combine darks (if no interpolation is performed). Default is CPUmath.mean_combine()</li>
+<li><strong>save</strong> &#8211; true if want to save the master dark file. Default is false.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">SciPy array</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="fadra.reduction.get_masterflat">
+<code class="descclassname">fadra.reduction.</code><code class="descname">get_masterflat</code><span class="sig-paren">(</span><em>instance</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#fadra.reduction.get_masterflat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns MasterFlat, combining all bias files using the given function.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>bias</strong> &#8211; AstroDir with all flat files</li>
+<li><strong>combine_mode</strong> &#8211; function used to combine flats. Default is CPUmath.mean_combine()</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">AstroFile</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="fadra.reduction.interpol">
+<code class="descclassname">fadra.reduction.</code><code class="descname">interpol</code><span class="sig-paren">(</span><em>darks</em>, <em>time</em><span class="sig-paren">)</span><a class="headerlink" href="#fadra.reduction.interpol" title="Permalink to this definition">¶</a></dt>
+<dd><p>Interpolates dark files to necessary exposure time.
+If a dark file with the desired exposure time is found, then it is returned.
+Else, a linear interpolation is performed from all the files.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>darks</strong> &#8211; AstroDir or list of dark files</li>
+<li><strong>time</strong> (<em>int</em>) &#8211; Desired exposure time</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">interpolated dark file</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">SciPy array</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="fadra.reduction.reduce">
+<code class="descclassname">fadra.reduction.</code><code class="descname">reduce</code><span class="sig-paren">(</span><em>raw</em>, <em>sci_path</em>, <em>dark=None</em>, <em>flat=None</em>, <em>combine_mode=&lt;function mean_combine&gt;</em>, <em>exp_time=None</em>, <em>save_masters=False</em>, <em>gpu=False</em><span class="sig-paren">)</span><a class="headerlink" href="#fadra.reduction.reduce" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs reduction of astronomical images.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>raw</strong> (<em>AstroDir</em>) &#8211; Raw image files</li>
+<li><strong>sci_path</strong> (<em>string or AstroDir</em>) &#8211; path to save reduced files. Can also be an AstroDir with an associated path.</li>
+<li><strong>dark</strong> &#8211; MasterDark or AstroDir of dark files to be combined</li>
+<li><strong>flat</strong> &#8211; MasterFlat or AstroDir of flat files to be combined</li>
+<li><strong>combine_mode</strong> &#8211; combine function for darks and flats</li>
+<li><strong>exp_time</strong> &#8211; exposure time for MasterDark calculation</li>
+<li><strong>save_masters</strong> &#8211; if True, master files will be saved to sci_path</li>
+<li><strong>gpu</strong> &#8211; gpu=False (default) performs reduction on CPU. True performs reduction on GPU.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">SciPy array of reduced files</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="photometry.html" class="btn btn-neutral float-right" title="The photometry module" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="CPUmath.html" class="btn btn-neutral" title="The CPUMath module" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Francisca Concha.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'1.0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

@@ -1,0 +1,10 @@
+fadra.src.user package
+======================
+
+Module contents
+---------------
+
+.. automodule:: fadra.src.user
+    :members:
+    :undoc-members:
+    :show-inheritance:

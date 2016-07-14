@@ -7,7 +7,6 @@ import dataproc as dp
 from dataproc.timeseries.Photometry import TimeseriesExamine as dpPhot
 import copy
 import scipy as sp
-import numpy as np
 import timeseries
 import matplotlib.pyplot as plt
 
@@ -80,8 +79,8 @@ class Photometry(dpPhot):
 
 
     def photometry(self, aperture=None, sky=None, gpu=False):
-        """ Peforms aperture photometry by calling the CPU or GPU photometry according to the
-            given flag.
+        """ Peforms aperture photometry by calling the CPU or GPU photometry according to the given flag.
+
         :param aperture: Aperture radius for photometry
         :type aperture: int
         :param sky: Inner and outer radii for sky annulus
@@ -108,9 +107,11 @@ class Photometry(dpPhot):
         return ts
 
     def centroid(self, orig_arr, medsub=True):
-        """Find centroid of small array
-        :param arr: array
-        :type arr: array
+        """ Find centroid of small array
+
+        :param orig_arr: array
+        :type orig_arr: SciPy array
+        :return: coordinates of the centroid of orig_array
         :rtype: [float, float]
         """
         arr = copy.copy(orig_arr)
@@ -131,16 +132,15 @@ class Photometry(dpPhot):
 
     def get_stamps(self, sci, target_coords, stamp_rad):
         """ Get stamps from an AstroDir of astronomical images, to perform aperture photometry.
+
         :param sci: Raw astronomical images
         :type sci: AstroDir
-        :param target_coords: Coordinates for all the stars over which photometry is to be performed, in
-                                coordinates of the first raw image
+        :param target_coords: Coordinates for all the stars over which photometry is to be performed, in coordinates of the first raw image
         :type target_coords: [[t1x, t1y], [t2x, t2y], ...]
         :param stamp_rad: "Square radius" for the stamps. Each stamp will be of shape (2*stamp_rad, 2*stamp_rad)
         :type stamp_rad: int
         :return: N data cubes of M stamps each. N is the number of targets, M the number of raw images.
-                Also: coordinates of the centroid of each stamp in image coordinates and in stamp coordinates,
-                list of epochs for each image, and target labels.
+        Also: coordinates of the centroid of each stamp in image coordinates and in stamp coordinates, list of epochs for each image, and target labels.
         """
 
         data = sci.files
@@ -178,6 +178,7 @@ class Photometry(dpPhot):
 
     def CPUphot(self):
         """ Performs aperture photometry on the CPU.
+
         :return: TimeSeries with the resulting photometry
         :rtype: TimeSeries
         """
@@ -203,7 +204,7 @@ class Photometry(dpPhot):
                                     (cyf-self.stamp_rad):(cyf+self.stamp_rad+1)]
                     flat_stamp = self.flat[(cxf-self.stamp_rad):(cxf+self.stamp_rad+1),
                                     (cyf-self.stamp_rad):(cyf+self.stamp_rad+1)]
-                    data = (target[t] - dark_stamp) / (flat_stamp/np.mean(flat_stamp))
+                    data = (target[t] - dark_stamp) / (flat_stamp/sp.mean(flat_stamp))
                 else:
                     data = target[t]
 
@@ -266,6 +267,7 @@ class Photometry(dpPhot):
 
     def GPUphot(self):
         """ Performs aperture photometry on the GPU.
+
         :return: TimeSeries with the resulting photometry
         :rtype: TimeSeries
         """
@@ -292,7 +294,7 @@ class Photometry(dpPhot):
         all_err = []
 
         for n in range(n_targets):  # For each target
-            target = np.array(self.sci_stamps[n])
+            target = sp.array(self.sci_stamps[n])
             c = self.stamp_coords[n]
             c_full = self.new_coords[n]
             cx, cy = c[0][0], c[0][1]
@@ -303,8 +305,8 @@ class Photometry(dpPhot):
                 flat_stamp = self.flat[(cxf-self.stamp_rad):(cxf+self.stamp_rad+1),
                                     (cyf-self.stamp_rad):(cyf+self.stamp_rad+1)]
             else:
-                dark_stamp = np.zeros((self.stamp_rad, self.stamp_rad))
-                flat_stamp = np.ones((self.stamp_rad, self.stamp_rad))
+                dark_stamp = sp.zeros((self.stamp_rad, self.stamp_rad))
+                flat_stamp = sp.ones((self.stamp_rad, self.stamp_rad))
 
             flattened_dark = dark_stamp.flatten()
             dark_f = flattened_dark.reshape(len(flattened_dark))
@@ -322,8 +324,8 @@ class Photometry(dpPhot):
                 # Create buffers
                 target_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=ft[0])
                 dark_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=dark_f)
-                flat_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=(flat_f/np.mean(flat_f)))
-                res_buf = cl.Buffer(ctx, mf.WRITE_ONLY, np.zeros((4, ), dtype=np.int32).nbytes)
+                flat_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=(flat_f/sp.mean(flat_f)))
+                res_buf = cl.Buffer(ctx, mf.WRITE_ONLY, sp.zeros((4, ), dtype=sp.int32).nbytes)
 
                 f_cl = open('../kernels/photometry.cl', 'r')
                 defines = """
@@ -343,7 +345,7 @@ class Photometry(dpPhot):
                                    None,
                                    target_buf, dark_buf, flat_buf, res_buf)
 
-                res = np.zeros((4, ), dtype=np.int32)
+                res = sp.zeros((4, ), dtype=sp.int32)
                 cl.enqueue_copy(queue, res, res_buf)
 
                 res_val = (res[0] - (res[2]/res[3])*res[1])
@@ -367,9 +369,11 @@ class Photometry(dpPhot):
     def plot_radialprofile(self, targets=None, xlim=None, axes=1,
                            legend_size=None,
                            **kwargs):
-        """Plot Radial Profile from data using radialprofile() function
-        :param target: Target spoecification for recentering. Either an integer for specifc target, or a 2-element list for x/y coordinates.
-        :type target: integer/string or 2-element list
+        """ Plot Radial Profile from data using radialprofile() function
+
+        :param target: Target spoecification for recentering.
+                    Either an integer for specifc target, or a 2-element list for x/y coordinates.
+        :type target: integer, string or 2-element list
         """
 
         colors = ['rx', 'b^', 'go', 'r^', 'bx', 'g+']
@@ -410,7 +414,7 @@ class Photometry(dpPhot):
         plt.show()
 
     def radialprofile(self, target, stamprad=None, frame=0, recenter=False):
-        """Returns the x&y arrays for radial profile
+        """ Returns the x and y arrays for radial profile
 
         :param target: Target spoecification for recentering. Either an integer for specifc target, or a 2-element list for x/y coordinates.
         :type target: integer/string or 2-element list
@@ -418,7 +422,7 @@ class Photometry(dpPhot):
         :type frame: integer
         :param recenter: whether to recenter
         :type recenter: bool
-        :rtype: (x-array,y-array, [x,y] center)
+        :rtype: (x-array, y-array, [x,y] center)
 """
         if isinstance(target, (int, str)):
             try:
@@ -458,12 +462,12 @@ class Photometry(dpPhot):
 
     def showstamp(self, target=None, stamprad=30,
                   first=0, last=-1, figure=None, ncol=None):
-        """Show the star at the same position for the different frames
+        """ Show the star at the same position for the different frames
 
         :param target: None for the first key()
         :param stamprad: Plotting radius
         :param first: First frame to show
-        :param last: Last frame to show. It can be onPython negative format
+        :param last: Last frame to show. It can be on Python negative format
         :param figure: Specify figure number
         :param ncol: Number of columns
 """

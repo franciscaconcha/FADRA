@@ -13,7 +13,7 @@ def _kernel_warning(k):
 
 def _check_array(function):
     """ Decorator to check if input is one array only.
-        Else, raises IOError.
+    Else, raises IOError.
     """
     @_wraps(function)
     def array_check(instance, *args, **kwargs):
@@ -24,7 +24,7 @@ def _check_array(function):
 
 def _check_combine_input(function):
     """ Decorator that checks all images in the input are
-        of the same size and type. Else, raises an error.
+    of the same size and type. Else, raises an error.
     """
     @_wraps(function)
     def input_checker(instance, *args, **kwargs):
@@ -55,13 +55,13 @@ def _check_combine_input(function):
 @_check_array
 @_check_combine_input
 def mean_combine(imgs, sigmaclip=False):
-    """ Combines an array of images, using mean. All images on the
-        array must be the same size, otherwise an error is raised.
-        Returns the combined image.
-    :param args: array of np.ndarrays
-    :return: np.ndarray
+    """ Combines an array of images, using the mean. All images on the array must be the same size, otherwise an error is raised.
+
+        :param imgs: array of images
+        :type imgs: SciPy array
+        :return: combination of all input images
+        :rtype: SciPy array
     """
-    #print("LEN: " + str(len(imgs)))
     if len(imgs) == 1:
         return imgs[0]
     else:
@@ -76,11 +76,12 @@ def mean_combine(imgs, sigmaclip=False):
 @_check_array
 @_check_combine_input
 def median_combine(imgs, sigmaclip=False):
-    """ Combines an array of images, using median. All images on the
-        array must be the same size, otherwise an error is raised.
-        Returns the combined image.
-    :param args: array of np.ndarrays
-    :return: np.ndarray
+    """ Combines an array of images, using the median. All images on the array must be the same size, otherwise an error is raised.
+
+        :param imgs: array of images
+        :type imgs: SciPy array
+        :return: combination of all input images
+        :rtype: SciPy array
     """
     if len(imgs) == 1:
         return imgs[0]
@@ -96,12 +97,15 @@ def median_combine(imgs, sigmaclip=False):
 @_check_combine_input
 def add_images(*args):
     """ Sums images on array.
-    :param args: array of np.ndarrays
-    :return: np.ndarray
+
+    :param args: array of images to be added
+    :type args: SciPy array
+    :return: addition of all the input images
+    :rtype: SciPy array
     """
     return sp.sum(*args, axis=0)
 
-def sigmask(image, sigma=3, eps=0.05, iterations=1):
+def _sigmask(image, sigma=3, eps=0.05, iterations=1):
     # TODO chequear que usuario entrege valores de iterations y de eps antes de empezar!
     # TODO chequear condiciones de termino...
     # for it in range(iterations):
@@ -115,15 +119,16 @@ def sigmask(image, sigma=3, eps=0.05, iterations=1):
     if tres < eps:
         return mask
 
-def sigma_clipping(image, funct, sigma=3, eps=0.05):
+def _sigma_clipping(image, funct, sigma=3, eps=0.05):
     mask = sigmask(image, sigma, eps)
     # positions = np.transpose(np.nonzero(image*mask))
     # values = [small_mean(image, p) for p in positions]
     return [image, mask]
 
 
-def shift_generator(a, k, m):
+def _shift_generator(a, k, m):
     """ Generates all the shifts needed to do the mean and median filters.
+
     :param a: original array
     :param k: kernel size, but actually it is the border of the kernel. kernel radius? must be even number
     :return: list with all the shifted np arrays
@@ -170,7 +175,7 @@ def shift_generator(a, k, m):
     return [top_left, top_right, bottom_left, bottom_right]
 
 
-def median_filter(image, kernel_size):
+def _median_filter(image, kernel_size):
     if kernel_size % 2 == 0:
         k = kernel_size - 1
         kernel_size += 1
@@ -191,7 +196,7 @@ def median_filter(image, kernel_size):
         return d[dif-1:-1, dif-1:-1]
 
 
-def mean_filter(image, kernel_size):
+def _mean_filter(image, kernel_size):
     if kernel_size % 2 == 0:
         k = kernel_size/2
         kernel_size += 1

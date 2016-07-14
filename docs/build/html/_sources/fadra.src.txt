@@ -1,0 +1,46 @@
+fadra.src package
+=================
+
+Subpackages
+-----------
+
+.. toctree::
+
+    fadra.src.defaultfuncs
+    fadra.src.user
+
+Submodules
+----------
+
+fadra.src.GPUtest module
+------------------------
+
+.. automodule:: fadra.src.GPUtest
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+fadra.src.get_stamps module
+---------------------------
+
+.. automodule:: fadra.src.get_stamps
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+fadra.src.reducetest module
+---------------------------
+
+.. automodule:: fadra.src.reducetest
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: fadra.src
+    :members:
+    :undoc-members:
+    :show-inheritance:

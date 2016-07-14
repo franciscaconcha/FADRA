@@ -1,0 +1,383 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>The timeseries module &mdash; FADRA 1.0.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="FADRA 1.0.1 documentation" href="index.html"/>
+        <link rel="prev" title="The photometry module" href="photometry.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> FADRA
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="example.html">FADRA usage example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CPUmath.html">The CPUMath module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="reduction.html">The reduction module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="photometry.html">The photometry module</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">The timeseries module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-fadra.timeseries">fadra.timeseries module</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">FADRA</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>The timeseries module</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/timeseries.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="the-timeseries-module">
+<h1>The timeseries module<a class="headerlink" href="#the-timeseries-module" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-fadra.timeseries">
+<span id="fadra-timeseries-module"></span><h2>fadra.timeseries module<a class="headerlink" href="#module-fadra.timeseries" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="fadra.timeseries.TimeSeries">
+<em class="property">class </em><code class="descclassname">fadra.timeseries.</code><code class="descname">TimeSeries</code><span class="sig-paren">(</span><em>data</em>, <em>errors</em>, <em>labels=None</em>, <em>epoch=None</em><span class="sig-paren">)</span><a class="headerlink" href="#fadra.timeseries.TimeSeries" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="fadra.timeseries.TimeSeries.errors_group1">
+<code class="descname">errors_group1</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#fadra.timeseries.TimeSeries.errors_group1" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns error channels of the first group.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">list of SciPy arrays</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="fadra.timeseries.TimeSeries.errors_group2">
+<code class="descname">errors_group2</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#fadra.timeseries.TimeSeries.errors_group2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns error channels of the second group.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">list of SciPy arrays</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="fadra.timeseries.TimeSeries.get_error">
+<code class="descname">get_error</code><span class="sig-paren">(</span><em>item</em><span class="sig-paren">)</span><a class="headerlink" href="#fadra.timeseries.TimeSeries.get_error" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retuns error channel for target given in item.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>item</strong> &#8211; ID of the target. Can be number or label name.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">error associated to photometry of said target</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">SciPy array</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="fadra.timeseries.TimeSeries.group1">
+<code class="descname">group1</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#fadra.timeseries.TimeSeries.group1" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns first grouping of photometry channels.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">list of SciPy arrays</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="fadra.timeseries.TimeSeries.group2">
+<code class="descname">group2</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#fadra.timeseries.TimeSeries.group2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns second grouping of photometry channels.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">list of SciPy arrays</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="fadra.timeseries.TimeSeries.mean">
+<code class="descname">mean</code><span class="sig-paren">(</span><em>group_id</em><span class="sig-paren">)</span><a class="headerlink" href="#fadra.timeseries.TimeSeries.mean" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the mean of the channels stored in group group_id. Also calculated for error
+channels. Result is stored in channel timeserie[-group_id]</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>group_id</strong> &#8211; int. 1 or 2.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="fadra.timeseries.TimeSeries.median">
+<code class="descname">median</code><span class="sig-paren">(</span><em>group_id</em><span class="sig-paren">)</span><a class="headerlink" href="#fadra.timeseries.TimeSeries.median" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the median of the channels stored in group group_id. Also calculated for error
+channels. Result is stored in channel timeserie[-group_id]</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>group_id</strong> &#8211; int. 1 or 2.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="fadra.timeseries.TimeSeries.plot">
+<code class="descname">plot</code><span class="sig-paren">(</span><em>label=None</em>, <em>axes=None</em><span class="sig-paren">)</span><a class="headerlink" href="#fadra.timeseries.TimeSeries.plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Display the timeseries data: flux (with errors) as function of mjd</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>label</strong> &#8211; Specify a single star to plot</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Rtype label:</th><td class="field-body">basestring</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">None (and plot display)</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="fadra.timeseries.TimeSeries.set_epoch">
+<code class="descname">set_epoch</code><span class="sig-paren">(</span><em>e</em><span class="sig-paren">)</span><a class="headerlink" href="#fadra.timeseries.TimeSeries.set_epoch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets epoch for time serie</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>e</strong> &#8211; epoch</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="fadra.timeseries.TimeSeries.set_group">
+<code class="descname">set_group</code><span class="sig-paren">(</span><em>new_group</em><span class="sig-paren">)</span><a class="headerlink" href="#fadra.timeseries.TimeSeries.set_group" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets a grouping inside the TimeSeries object. Targets can be grouped or ungrouped together
+as a way to easily perform operations between many of them.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>new_group</strong> &#8211; Mask of 0s and 1s. 1s are the first group. Ex: [0 1 0 0 1 0] defines the first
+group to contain targets 2 and 5; second group contains targets 1, 3, 4 and 6.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="fadra.timeseries.TimeSeries.set_labels">
+<code class="descname">set_labels</code><span class="sig-paren">(</span><em>ids</em><span class="sig-paren">)</span><a class="headerlink" href="#fadra.timeseries.TimeSeries.set_labels" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets name labels for each channel</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>ids</strong> (<em>list of strings</em>) &#8211; list of label names</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">List of strings</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="photometry.html" class="btn btn-neutral" title="The photometry module" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Francisca Concha.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'1.0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

@@ -1,0 +1,54 @@
+fadra.outsiders package
+=======================
+
+Submodules
+----------
+
+fadra.outsiders.openFiles module
+--------------------------------
+
+.. automodule:: fadra.outsiders.openFiles
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+fadra.outsiders.reduc module
+----------------------------
+
+.. automodule:: fadra.outsiders.reduc
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+fadra.outsiders.rms_filters module
+----------------------------------
+
+.. automodule:: fadra.outsiders.rms_filters
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+fadra.outsiders.testTimeSeries module
+-------------------------------------
+
+.. automodule:: fadra.outsiders.testTimeSeries
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+fadra.outsiders.timing_filters module
+-------------------------------------
+
+.. automodule:: fadra.outsiders.timing_filters
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: fadra.outsiders
+    :members:
+    :undoc-members:
+    :show-inheritance:

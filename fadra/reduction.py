@@ -1,9 +1,10 @@
+from __future__ import print_function, division
+
 __author__ = "Francisca Concha"
 __license__ = "GPLv3"
 __email__ = "faconcha@dcc.uchile.cl"
 __status__ = "Development"
 
-from __future__ import print_function, division
 import CPUmath
 import pyfits as pf
 import warnings
@@ -20,7 +21,7 @@ try:
 except ImportError:
     pass
 
-def total_size(o, handlers={}, verbose=False):
+def _total_size(o, handlers={}, verbose=False):
     """ Returns the approximate memory footprint an object and all of its contents.
 
     Automatically finds the contents of the following builtin containers and
@@ -63,7 +64,7 @@ def total_size(o, handlers={}, verbose=False):
 
 def _check_combine_input(function):
     """ Decorator that checks all images in the input are
-        of the same size and type. Else, raises an error.
+    of the same size and type. Else, raises an error.
     """
 
     @_wraps(function)
@@ -98,10 +99,10 @@ def _check_combine_input(function):
 #TODO no es necesario _check_combine_input aqui, se hace en _combine functions...
 @_check_combine_input
 def get_masterbias(bias, combine_mode, save_path):
-    """ Returns masterbias, combining all bias files using the given function.
-        If function not given, uses CPU mean as default. Returns AstroFile.
+    """ Returns MasterBias, combining all bias files using the given function.
+
     :param bias: AstroDir with all bias files
-    :param combine_mode: function used to combine bias
+    :param combine_mode: function used to combine bias. Default is CPUmath.mean_combine()
     :return: AstroFile
     """
     master_bias = combine_mode(bias)
@@ -112,10 +113,10 @@ def get_masterbias(bias, combine_mode, save_path):
 
 @_check_combine_input
 def get_masterflat(flats, combine_mode, save):
-    """ Returns masterflat, combining all bias files using the given function.
-        If function not given, uses CPU mean as default. Returns AstroFile.
+    """ Returns MasterFlat, combining all bias files using the given function.
+
     :param bias: AstroDir with all flat files
-    :param combine_mode: function used to combine bias
+    :param combine_mode: function used to combine flats. Default is CPUmath.mean_combine()
     :return: AstroFile
     """
     master_flat = combine_mode(flats)
@@ -126,6 +127,7 @@ def get_masterflat(flats, combine_mode, save):
 
 def column(array, x, y):
     """ Returns vertical column from stack of 2D arrays.
+
     :param array: Stack (list) of 2D arrays
     :param x: x coordinate of desired column
     :param y: y coordinate of desired column
@@ -139,8 +141,10 @@ def column(array, x, y):
 
 
 def interpol(darks, time):
-    """ Interpolates dark files to necessary exposure time. If a dark file with the desired exposure
-        time is found, then it is returned. Else, a linear interpolation is performed from all the files.
+    """ Interpolates dark files to necessary exposure time.
+    If a dark file with the desired exposure time is found, then it is returned.
+    Else, a linear interpolation is performed from all the files.
+
     :param darks: AstroDir or list of dark files
     :param time: Desired exposure time
     :type time: int
@@ -172,13 +176,12 @@ def interpol(darks, time):
 
 @_check_combine_input
 def get_masterdark(darks, combine_mode, time, save):
-    """ Returns masterdark, combining all dark files using the given function.
-        If not, uses CPU mean as default. Returns masterdark file and brings
-        option to save it to .fits file.
+    """ Returns MasterDark, combining all dark files using the given function.
+
     :param flats: np.ndarray with all dark arrays
-    :param combine_mode: function used to combine darks
+    :param combine_mode: function used to combine darks (if no interpolation is performed). Default is CPUmath.mean_combine()
     :param save: true if want to save the master dark file. Default is false.
-    :return: np.ndarray (master dark)
+    :return: SciPy array
     """
     if time is None:
         master_dark = combine_mode(darks)
@@ -203,16 +206,13 @@ def get_masterdark(darks, combine_mode, time, save):
 def CPUreduce(raw, sci_path, dark=None, flat=None,
               combine_mode=CPUmath.mean_combine, exp_time=None, save_masters=False):
     """ Reduces image files on CPU. Master calibration fields should be attached to the raw AstroDir.
-        If AstroDirs are given for dark or flat, they are combined to obtain masters.
-        Combination function given in combine_mode, default is CPU mean_combine.
-        Saves masters to their AstroDir paths if save_masters = True.
-        Returns AstroDir of reduced sci images.
-        Saves reduced images to sci AstroDir path is save_reduced = True.
+    If AstroDirs are given for dark or flat, they are combined to obtain masters.
+
     :param raw: AstroDir of raw files, with corresponding masters attached
     :param sci_path: Path to save reduced files
     :param dark: (optional) AstroDir of all dark files to be combined
     :param flat: (optional) AstroDir of all flat files to be combined
-    :param combine_mode: (optional) function used to combine bias, darks, and flats
+    :param combine_mode: (optional) function used to combine bias, darks, and flats. Default is CPUmath.mean_combine()
     :param exp_time: (optional) desired exposure time. If a value is given, the dark AstroDir will be
                     searched for the corresponding dark for said exposure time, and that dark will be
                     used as MasterDark. If no dark is found for that exposure time, one will be
@@ -281,21 +281,18 @@ def CPUreduce(raw, sci_path, dark=None, flat=None,
 def GPUreduce(raw, sci_path, dark=None, flat=None,
               combine_mode=CPUmath.mean_combine, exp_time=None, save_masters=False):
     """ Reduces image files on GPU. Master calibration fields should be attached to the raw AstroDir.
-        If AstroDirs are given for dark or flat, they are combined to obtain masters.
-        Combination function given in combine_mode, default is CPU mean_combine.
-        Saves masters to their AstroDir paths if save_masters = True.
-        Returns AstroDir of reduced sci images.
-        Saves reduced images to sci AstroDir path is save_reduced = True.
+    If AstroDirs are given for dark or flat, they are combined to obtain masters.
+
     :param raw: AstroDir of raw files, with corresponding masters attached
     :param sci_path: Path to save reduced files
     :param dark: (optional) AstroDir of all dark files to be combined
     :param flat: (optional) AstroDir of all flat files to be combined
-    :param combine_mode: (optional) function used to combine bias, darks, and flats
-    :param exp_time: (optional) desired exposure time. If a value is given, the dark AstroDir will be
-                    searched for the corresponding dark for said exposure time, and that dark will be
-                    used as MasterDark. If no dark is found for that exposure time, one will be
-                    interpolated. If no exp_time is given (not recommended!), all dark files in 'dark'
-                    will simply be combined using combine_mode.
+    :param combine_mode: (optional) function used to combine bias, darks, and flats. Default is CPUmath.mean_combine()
+    :param exp_time: (optional) desired exposure time. If a value is given, the dark AstroDir will
+                    be searched for the corresponding dark for said exposure time, and that dark will be used as
+                    MasterDark. If no dark is found for that exposure time, one will be interpolated.
+                    If no exp_time is given (not recommended!), all dark files in 'dark' will simply be combined
+                    using combine_mode.
     :param save_masters: option to save master files. Default is false. Saves in raw AstroDir path.
     :param save_reduced: option to save reduced files. Default is false. Saves in sci AstroDir path.
     :return: AstroDir of reduced science images and corresponding master files attached.
@@ -414,6 +411,7 @@ def GPUreduce(raw, sci_path, dark=None, flat=None,
 def reduce(raw, sci_path, dark=None, flat=None,
               combine_mode=CPUmath.mean_combine, exp_time=None, save_masters=False, gpu=False):
     """ Performs reduction of astronomical images.
+
     :param raw: Raw image files
     :type raw: AstroDir
     :param sci_path: path to save reduced files. Can also be an AstroDir with an associated path.

@@ -1,0 +1,182 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>fadra.outsiders package &mdash; FADRA 1.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="FADRA 1.0.1 documentation" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="fadra-outsiders-package">
+<h1>fadra.outsiders package<a class="headerlink" href="#fadra-outsiders-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-fadra.outsiders.openFiles">
+<span id="fadra-outsiders-openfiles-module"></span><h2>fadra.outsiders.openFiles module<a class="headerlink" href="#module-fadra.outsiders.openFiles" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="fadra.outsiders.openFiles.get_file_list">
+<code class="descclassname">fadra.outsiders.openFiles.</code><code class="descname">get_file_list</code><span class="sig-paren">(</span><em>fpath</em><span class="sig-paren">)</span><a class="headerlink" href="#fadra.outsiders.openFiles.get_file_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Receives a path and returns a list of all the files within that
+path. The names are returned with the path included, ready to
+be open. Subfolders are ignored.
+:param fpath: path to files folder
+:return: [filenames]</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="fadra.outsiders.openFiles.one_path">
+<code class="descclassname">fadra.outsiders.openFiles.</code><code class="descname">one_path</code><span class="sig-paren">(</span><em>fpath</em><span class="sig-paren">)</span><a class="headerlink" href="#fadra.outsiders.openFiles.one_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handles file opening when all BIAS, dark, flat, and raw
+science files are within one common folder. Will use header</p>
+<blockquote>
+<div>data of each file to separate between categories.
+USE AT YOUR OWN RISK! Make sure all headers have the right info first!</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>fpath</strong> &#8211; path to folder with all the files</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">[[biasdata, biasheaders], [darkdata, darkheaders], [flatdata, flatheaders], [rawdata, rawheaders]]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="fadra.outsiders.openFiles.open_files">
+<code class="descclassname">fadra.outsiders.openFiles.</code><code class="descname">open_files</code><span class="sig-paren">(</span><em>filelist</em><span class="sig-paren">)</span><a class="headerlink" href="#fadra.outsiders.openFiles.open_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>Receives list of filenames. Returns 2 lists: one with
+science data and one with the files&#8217; headers.
+:param filelist: list of filenames to open
+:return: [list, list] [data, headers]</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="fadra.outsiders.openFiles.separate_paths">
+<code class="descclassname">fadra.outsiders.openFiles.</code><code class="descname">separate_paths</code><span class="sig-paren">(</span><em>biaspath</em>, <em>darkpath</em>, <em>flatpath</em>, <em>rawpath</em><span class="sig-paren">)</span><a class="headerlink" href="#fadra.outsiders.openFiles.separate_paths" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handles file opening when paths are given separately
+for each kind of file. If only one file is wanted then
+it must be the sole file in the given path.
+:param biaspath: path to BIAS files folder
+:param darkpath: path to Dark files folder
+:param flatpath: path to Flat files folder
+:param rawpath: path to raw science images folder
+:return: [[biasdata, biasheaders], [darkdata, darkheaders], [flatdata, flatheaders], [rawdata, rawheaders]]</p>
+</dd></dl>
+
+</div>
+<div class="section" id="fadra-outsiders-reduc-module">
+<h2>fadra.outsiders.reduc module<a class="headerlink" href="#fadra-outsiders-reduc-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="fadra-outsiders-rms-filters-module">
+<h2>fadra.outsiders.rms_filters module<a class="headerlink" href="#fadra-outsiders-rms-filters-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="fadra-outsiders-testtimeseries-module">
+<h2>fadra.outsiders.testTimeSeries module<a class="headerlink" href="#fadra-outsiders-testtimeseries-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="fadra-outsiders-timing-filters-module">
+<h2>fadra.outsiders.timing_filters module<a class="headerlink" href="#fadra-outsiders-timing-filters-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-fadra.outsiders">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-fadra.outsiders" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">fadra.outsiders package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-fadra.outsiders.openFiles">fadra.outsiders.openFiles module</a></li>
+<li><a class="reference internal" href="#fadra-outsiders-reduc-module">fadra.outsiders.reduc module</a></li>
+<li><a class="reference internal" href="#fadra-outsiders-rms-filters-module">fadra.outsiders.rms_filters module</a></li>
+<li><a class="reference internal" href="#fadra-outsiders-testtimeseries-module">fadra.outsiders.testTimeSeries module</a></li>
+<li><a class="reference internal" href="#fadra-outsiders-timing-filters-module">fadra.outsiders.timing_filters module</a></li>
+<li><a class="reference internal" href="#module-fadra.outsiders">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/fadra.outsiders.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, Francisca Concha.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
+      
+      |
+      <a href="_sources/fadra.outsiders.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
