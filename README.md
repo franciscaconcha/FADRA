@@ -7,11 +7,17 @@ FADRA is currently under development. The modules currently working are for imag
 
 ## Requirements
 Python packages:
+
 • dataproc
+
 • SciPy: https://www.scipy.org/
+
 • PyOpenCL: https://mathema.tician.de/software/pyopencl/
+
 • PyFits: http://www.stsci.edu/institute/software_hardware/pyfits
+
 • warnings: https://docs.python.org/3.1/library/warnings.html
+
 • copy: https://pymotw.com/2/copy/
 
 If GPU reduction or photometry are to be performed: GPU correctly installed with its corresponding drivers to run OpenCL.
