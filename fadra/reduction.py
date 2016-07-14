@@ -133,8 +133,15 @@ def column(array, x, y):
     return c
 
 
-# Interpolates darks to necessary exposure time
 def interpol(darks, time):
+    """ Interpolates dark files to necessary exposure time. If a dark file with the desired exposure
+        time is found, then it is returned. Else, a linear interpolation is performed from all the files.
+    :param darks: AstroDir or list of dark files
+    :param time: Desired exposure time
+    :type time: int
+    :return: interpolated dark file
+    :rtype: SciPy array
+    """
     times = []
     for f in darks:
         d = pf.open(f)
@@ -188,19 +195,18 @@ def get_masterdark(darks, combine_mode, time, save):
     return master_dark
 
 
-def CPUreduce(raw, sci_path, bias=None, dark=None, flat=None,
+def CPUreduce(raw, sci_path, dark=None, flat=None,
               combine_mode=CPUmath.mean_combine, exp_time=None, save_masters=False):
-    """ Reduces image files. Master calibration fields should be attached to the raw AstroDir.
-        If AstroDirs are given for bias, dark, or flat, they are combined to obtain masters.
+    """ Reduces image files on CPU. Master calibration fields should be attached to the raw AstroDir.
+        If AstroDirs are given for dark or flat, they are combined to obtain masters.
         Combination function given in combine_mode, default is CPU mean_combine.
         Saves masters to their AstroDir paths if save_masters = True.
         Returns AstroDir of reduced sci images.
         Saves reduced images to sci AstroDir path is save_reduced = True.
     :param raw: AstroDir of raw files, with corresponding masters attached
     :param sci_path: Path to save reduced files
-    :param bias: (optional) AstroDir of all bias files to be combined
-    :param flat: (optional) AstroDir of all flat files to be combined
     :param dark: (optional) AstroDir of all dark files to be combined
+    :param flat: (optional) AstroDir of all flat files to be combined
     :param combine_mode: (optional) function used to combine bias, darks, and flats
     :param exp_time: (optional) desired exposure time. If a value is given, the dark AstroDir will be
                     searched for the corresponding dark for said exposure time, and that dark will be
@@ -211,23 +217,6 @@ def CPUreduce(raw, sci_path, bias=None, dark=None, flat=None,
     :param save_reduced: option to save reduced files. Default is false. Saves in sci AstroDir path.
     :return: AstroDir of reduced science images and corresponding master files attached.
     """
-    #import dataproc as dp
-    #print(len(bias), len(dark), len(flat))
-
-    if bias is not None:
-        # This is done here for now, otherwise decorator on get_masterX has to be fixed
-        if isinstance(bias, io_dir.AstroDir):
-            #print("Is AstroDir")
-            bias_data = bias.readdata()
-            mb = get_masterbias(bias_data, combine_mode, save_masters)
-        elif isinstance(bias, io_file.AstroFile):
-            #print("Is AstroFile")
-            mb = bias.reader()
-        else:
-            warnings.warn('Combining bias with function: %s' % (combine_mode))
-            mb = get_masterbias(bias, combine_mode, save_masters)
-    else:
-        mb = raw.bias
     if dark is not None:
         if isinstance(dark, io_dir.AstroDir):
             dark_data = dark.readdata()
@@ -266,12 +255,11 @@ def CPUreduce(raw, sci_path, bias=None, dark=None, flat=None,
         #r = dr.reader()
         with np.errstate(divide='raise'):
             try:
-                s = (r - md) / ((mf-mb)/np.mean(mf-mb))
+                s = (r - md) / ((mf-md)/np.mean(mf-md))
                 #print("ok")
             except FloatingPointError:
-                s = (r - mb)
-        #print(s)
-        #print("*")
+                s = (r - md)
+
         res.append(s)
         # TODO check what happens with the header
         #s_header = r.readheader()  # Reduced data header is same as raw header for now
@@ -285,8 +273,28 @@ def CPUreduce(raw, sci_path, bias=None, dark=None, flat=None,
     return res, t1
 
 
-def GPUreduce(raw, sci_path, bias=None, dark=None, flat=None,
+def GPUreduce(raw, sci_path, dark=None, flat=None,
               combine_mode=CPUmath.mean_combine, exp_time=None, save_masters=False):
+    """ Reduces image files on GPU. Master calibration fields should be attached to the raw AstroDir.
+        If AstroDirs are given for dark or flat, they are combined to obtain masters.
+        Combination function given in combine_mode, default is CPU mean_combine.
+        Saves masters to their AstroDir paths if save_masters = True.
+        Returns AstroDir of reduced sci images.
+        Saves reduced images to sci AstroDir path is save_reduced = True.
+    :param raw: AstroDir of raw files, with corresponding masters attached
+    :param sci_path: Path to save reduced files
+    :param dark: (optional) AstroDir of all dark files to be combined
+    :param flat: (optional) AstroDir of all flat files to be combined
+    :param combine_mode: (optional) function used to combine bias, darks, and flats
+    :param exp_time: (optional) desired exposure time. If a value is given, the dark AstroDir will be
+                    searched for the corresponding dark for said exposure time, and that dark will be
+                    used as MasterDark. If no dark is found for that exposure time, one will be
+                    interpolated. If no exp_time is given (not recommended!), all dark files in 'dark'
+                    will simply be combined using combine_mode.
+    :param save_masters: option to save master files. Default is false. Saves in raw AstroDir path.
+    :param save_reduced: option to save reduced files. Default is false. Saves in sci AstroDir path.
+    :return: AstroDir of reduced science images and corresponding master files attached.
+    """
     import pyopencl as cl
     import os
     os.environ['PYOPENCL_COMPILER_OUTPUT'] = '1'
@@ -313,20 +321,6 @@ def GPUreduce(raw, sci_path, bias=None, dark=None, flat=None,
 
     #warnings.warn('Using combine function: %s' % (combine_mode))
 
-    if bias is not None:
-        # This is done here for now, otherwise decorator on get_masterX has to be fixed
-        if isinstance(bias, io_dir.AstroDir):
-            #print("Is AstroDir")
-            bias_data = bias.readdata()
-            mb = get_masterbias(bias_data, combine_mode, save_masters)
-        elif isinstance(bias, io_file.AstroFile):
-            #print("Is AstroFile")
-            mb = bias.reader()
-        else:
-            warnings.warn('Combining bias with function: %s' % (combine_mode))
-            mb = get_masterbias(bias, combine_mode, save_masters)
-    else:
-        mb = raw.bias
     if dark is not None:
         if isinstance(dark, io_dir.AstroDir):
             dark_data = dark.readdata()
@@ -378,54 +372,58 @@ def GPUreduce(raw, sci_path, bias=None, dark=None, flat=None,
         ss = sh[0] * sh[1]
         data = fi.reshape(1, ss)
         ndata = data[0]
-        #print(md.dtype)
-        #img = np.append(img, ndata)
-        #print("New data size:", total_size(ndata), 'MB')
 
-    #print(mb)#, md.shape, m_f.shape, mb.shape[0]*mb.shape[1], ss)
-        mb = mb.reshape(1, ss)
         md = md.reshape(1, ss)
         m_f = m_f.reshape(1, ss)
 
-        #print(len(img))
-        img = data[0] #- mb
+        img = data[0]
 
         # GPU reduction
-        img_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=img)#fi - mb)
-        dark_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=md)# - mb)
-        flat_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=(m_f - mb)/np.mean(m_f - mb))
+        img_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=img)
+        dark_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=md)
+        flat_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=(m_f - md)/np.mean(m_f - md))
         res_buf = cl.Buffer(ctx, mf.WRITE_ONLY, fi.nbytes)
 
-        #f = open('/media/Fran/fractal/test/add.cl', 'r')
-        f = open('/media/Fran/fractal/src/reduce.cl', 'r')
+        f = open('../kernels/reduce.cl', 'r')
         defines = """
                     #define SIZE %d
-                    """ % (sh[0])#(len(fi))
+                    """ % (sh[0])
         programName = defines + "".join(f.readlines())
         program = cl.Program(ctx, programName).build()
         program.reduce(queue, img.shape, None, dark_buf, flat_buf, img_buf, res_buf)  # sizeX, sizeY, sizeZ
 
-        res = np.empty_like(ndata)#(fi)
+        res = np.empty_like(ndata)
         cl.enqueue_copy(queue, res, res_buf)
-        #print(res.shape)
-        #print(sh)
+
         res3 = res.reshape(sh)
         hdu = pf.PrimaryHDU(res3)
-        filename = sci_path + "/GPU_7_reduced_" + "%03i.fits" % i
-        i += 1
-        hdu.writeto(filename)
+        #filename = sci_path + "/GPU_7_reduced_" + "%03i.fits" % i
+        #i += 1
+        #hdu.writeto(filename)
         res2.append(res3)
 
     t1 = time.clock() - t0
 
-    #return io_dir.AstroDir(sci_path, mb, m_f, md)
     return res2, t1
 
-def reduce(raw, sci_path, bias=None, dark=None, flat=None,
+def reduce(raw, sci_path, dark=None, flat=None,
               combine_mode=CPUmath.mean_combine, exp_time=None, save_masters=False, gpu=False):
+    """ Performs reduction of astronomical images.
+    :param raw: Raw image files
+    :type raw: AstroDir
+    :param sci_path: path to save reduced files. Can also be an AstroDir with an associated path.
+    :type sci_path: string or AstroDir
+    :param dark: MasterDark or AstroDir of dark files to be combined
+    :param flat: MasterFlat or AstroDir of flat files to be combined
+    :param combine_mode: combine function for darks and flats
+    :param exp_time: exposure time for MasterDark calculation
+    :param save_masters: if True, master files will be saved to sci_path
+    :param gpu: gpu=False (default) performs reduction on CPU. True performs reduction on GPU.
+    :return: SciPy array of reduced files
+    """
     if gpu:
-        res, t = GPUreduce(raw, sci_path, bias, dark, flat, combine_mode, exp_time, save_masters)
+        res, t = GPUreduce(raw, sci_path, dark, flat, combine_mode, exp_time, save_masters)
     else:
-        res, t = CPUreduce(raw, sci_path, bias, dark, flat, combine_mode, exp_time, save_masters)
-    return res, t
+        res, t = CPUreduce(raw, sci_path, dark, flat, combine_mode, exp_time, save_masters)
+    return res
 

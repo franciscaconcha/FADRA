@@ -1,24 +1,24 @@
 __author__ = 'Francisca Concha'
 
 import dataproc as dp
-from dataproc.timeseries import Photometry as dpPhotometry
+from dataproc.timeseries.Photometry import TimeseriesExamine as dpPhot
 import copy
 import scipy as sp
 import numpy as np
 import timeseries
 import matplotlib.pyplot as plt
 
-class classAb(object):
-    pass
 
-class Photometry(dp.timeseries.astrocalc.AstroCalc):
-    #__metaclass__ = AstroCalc
+class Photometry(dpPhot):
+
     def __init__(self, sci, aperture=None, sky=None, mdark=None, mflat=None, calculate_stamps=True,
                    target_coords=None, stamp_rad=None, new_coords=None, stamp_coords=None,
                    epoch=None, labels=None, deg=1, gain=None, ron=None):
+        # If sci is an AstroDir and stamps need to be calculated
         if calculate_stamps:
             self.sci_stamps, self.new_coords, self.stamp_coords, self.epoch, self.labels = self.get_stamps(sci, target_coords, stamp_rad)
             self.stamp_rad = stamp_rad
+        # If the user already calculated the stamps
         else:
             self.sci_stamps = sci
             self.stamp_rad = stamp_rad
@@ -27,6 +27,7 @@ class Photometry(dp.timeseries.astrocalc.AstroCalc):
             self.epoch = epoch
             self.labels = labels
 
+        # Not sure if this is needed anymore... had something to do with dataproc compatibility
         if mdark is not None and mflat is not None:
             self.calib = True
             self.dark = mdark
@@ -41,8 +42,11 @@ class Photometry(dp.timeseries.astrocalc.AstroCalc):
         self.gain = gain
         self.ron = ron
         self.len = len(self.sci_stamps[0])
+        self.files = sci
+        self.masterbias = mdark
+        self.masterflat = mflat
 
-        # label list
+        # Label list
         if isinstance(target_coords, dict):
             labels = target_coords.keys()
             coordsxy = target_coords.values()
@@ -73,6 +77,16 @@ class Photometry(dp.timeseries.astrocalc.AstroCalc):
 
 
     def photometry(self, aperture=None, sky=None, gpu=False):
+        """ Peforms aperture photometry by calling the CPU or GPU photometry according to the
+            given flag.
+        :param aperture: Aperture radius for photometry
+        :type aperture: int
+        :param sky: Inner and outer radii for sky annulus
+        :type sky: [int, int] or polynomial fit for sky annulus
+        :param gpu: gpu=False (default) runs CPU photometry. True runs GPU photometry.
+        :return: TimeSeries with the performed photometry
+        :rtype: TimeSeries
+        """
         if aperture is not None:
             self.aperture = aperture
         if sky is not None:
@@ -94,7 +108,7 @@ class Photometry(dp.timeseries.astrocalc.AstroCalc):
         """Find centroid of small array
         :param arr: array
         :type arr: array
-        :rtype: [float,float]
+        :rtype: [float, float]
         """
         arr = copy.copy(orig_arr)
 
@@ -113,13 +127,17 @@ class Photometry(dp.timeseries.astrocalc.AstroCalc):
 
 
     def get_stamps(self, sci, target_coords, stamp_rad):
-        """
-
-        :param sci:
+        """ Get stamps from an AstroDir of astronomical images, to perform aperture photometry.
+        :param sci: Raw astronomical images
         :type sci: AstroDir
-        :param target_coords: [[t1x, t1y], [t2x, t2y], ...]
-        :param stamp_rad:
-        :return:
+        :param target_coords: Coordinates for all the stars over which photometry is to be performed, in
+                                coordinates of the first raw image
+        :type target_coords: [[t1x, t1y], [t2x, t2y], ...]
+        :param stamp_rad: "Square radius" for the stamps. Each stamp will be of shape (2*stamp_rad, 2*stamp_rad)
+        :type stamp_rad: int
+        :return: N data cubes of M stamps each. N is the number of targets, M the number of raw images.
+                Also: coordinates of the centroid of each stamp in image coordinates and in stamp coordinates,
+                list of epochs for each image, and target labels.
         """
 
         data = sci.files
@@ -156,6 +174,10 @@ class Photometry(dp.timeseries.astrocalc.AstroCalc):
 
 
     def CPUphot(self):
+        """ Performs aperture photometry on the CPU.
+        :return: TimeSeries with the resulting photometry
+        :rtype: TimeSeries
+        """
         n_targets = len(self.sci_stamps)
         n_frames = len(self.sci_stamps[0])
         all_phot = []
@@ -221,11 +243,10 @@ class Photometry(dp.timeseries.astrocalc.AstroCalc):
 
                 fwhmg = 2.355*sig[1]
 
-                #now photometry
+                # Photometry
                 phot = float(res[d < self.aperture].sum())
-                #print("phot: %.5d" % (phot))
 
-                #now the error
+                # Photometry error
                 if self.gain is None:
                     error = None
                 else:
@@ -241,6 +262,10 @@ class Photometry(dp.timeseries.astrocalc.AstroCalc):
 
 
     def GPUphot(self):
+        """ Performs aperture photometry on the GPU.
+        :return: TimeSeries with the resulting photometry
+        :rtype: TimeSeries
+        """
         import pyopencl as cl
         import os
         os.environ['PYOPENCL_COMPILER_OUTPUT'] = '1'
@@ -291,6 +316,7 @@ class Photometry(dp.timeseries.astrocalc.AstroCalc):
                 ss = s[0] * s[1]
                 ft = f.reshape(1, ss)
 
+                # Create buffers
                 target_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=ft[0])
                 dark_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=dark_f)
                 flat_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=(flat_f/np.mean(flat_f)))
@@ -320,7 +346,7 @@ class Photometry(dp.timeseries.astrocalc.AstroCalc):
                 res_val = (res[0] - (res[2]/res[3])*res[1])
                 this_phot.append(res_val)
 
-                #now the error
+                # Photometry error
                 if self.gain is None:
                     error = None
                 else:
